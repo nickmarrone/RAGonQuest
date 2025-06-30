@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
@@ -8,6 +8,7 @@ class CorpusBase(BaseModel):
     description: Optional[str] = Field(None, description="Description of the corpus")
     default_prompt: str = Field(..., min_length=1, description="Default prompt for the corpus")
     qdrant_collection_name: str = Field(..., min_length=1, max_length=255, description="Qdrant collection name")
+    path: str = Field(..., min_length=1, max_length=500, description="Path to the corpus directory")
 
 class CorpusCreate(CorpusBase):
     pass
@@ -17,10 +18,32 @@ class CorpusUpdate(BaseModel):
     description: Optional[str] = Field(None, description="Description of the corpus")
     default_prompt: Optional[str] = Field(None, min_length=1, description="Default prompt for the corpus")
     qdrant_collection_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Qdrant collection name")
+    path: Optional[str] = Field(None, min_length=1, max_length=500, description="Path to the corpus directory")
+
+class CorpusFileBase(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=255, description="Name of the file")
+    is_ingested: bool = Field(False, description="Whether the file has been ingested into the vector database")
+
+class CorpusFileCreate(CorpusFileBase):
+    pass
+
+class CorpusFileUpdate(BaseModel):
+    filename: Optional[str] = Field(None, min_length=1, max_length=255, description="Name of the file")
+    is_ingested: Optional[bool] = Field(None, description="Whether the file has been ingested into the vector database")
+
+class CorpusFileResponse(CorpusFileBase):
+    id: str = Field(..., description="Corpus file ID")
+    corpus_id: str = Field(..., description="Corpus ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    
+    class Config:
+        from_attributes = True
 
 class CorpusResponse(CorpusBase):
     id: str = Field(..., description="Corpus ID")
     created_at: datetime = Field(..., description="Creation timestamp")
+    files: List[CorpusFileResponse] = Field(default=[], description="List of files in the corpus")
     
     class Config:
         from_attributes = True 

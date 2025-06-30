@@ -4,7 +4,6 @@ from sqlalchemy import text
 from .database import engine, qdrant_client
 from .routers import corpus
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 

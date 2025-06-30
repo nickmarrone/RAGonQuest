@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
+import os
 from ..database import get_db
 from ..models import Corpus
 from ..schemas import CorpusCreate, CorpusUpdate, CorpusResponse
@@ -21,11 +22,26 @@ def create_corpus(corpus: CorpusCreate, db: Session = Depends(get_db)):
             detail=f"Corpus with name '{corpus.name}' already exists"
         )
     
+    # Validate that the path exists and is a directory (only if path is provided)
+    if corpus.path:
+        if not os.path.exists(corpus.path):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Path '{corpus.path}' does not exist"
+            )
+        
+        if not os.path.isdir(corpus.path):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Path '{corpus.path}' is not a directory"
+            )
+    
     db_corpus = Corpus(
         name=corpus.name,
         description=corpus.description,
         default_prompt=corpus.default_prompt,
-        qdrant_collection_name=corpus.qdrant_collection_name
+        qdrant_collection_name=corpus.qdrant_collection_name,
+        path=corpus.path
     )
     
     try:
@@ -83,6 +99,20 @@ def update_corpus(corpus_id: str, corpus_update: CorpusUpdate, db: Session = Dep
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Corpus with name '{corpus_update.name}' already exists"
+            )
+    
+    # Validate path if it's being updated
+    if corpus_update.path is not None and corpus_update.path:
+        if not os.path.exists(corpus_update.path):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Path '{corpus_update.path}' does not exist"
+            )
+        
+        if not os.path.isdir(corpus_update.path):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Path '{corpus_update.path}' is not a directory"
             )
     
     # Update only provided fields
