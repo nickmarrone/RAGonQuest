@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List
+from typing import List, Optional
 import os
+import glob
 from ..database import get_db
-from ..models import Corpus
-from ..schemas import CorpusCreate, CorpusUpdate, CorpusResponse
+from ..models import Corpus, CorpusFile
+from ..schemas import CorpusCreate, CorpusUpdate, CorpusResponse, CorpusFileResponse
+from ..services.openai_service import estimate_embedding_cost_for_corpus_file, estimate_embedding_cost_for_corpus, CorpusFileCostInfo, CorpusCostSummary
 
 router = APIRouter(prefix="/corpora", tags=["corpora"])
 
@@ -129,4 +131,170 @@ def update_corpus(corpus_id: str, corpus_update: CorpusUpdate, db: Session = Dep
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Corpus update failed due to database constraint violation"
+        )
+
+@router.post("/{corpus_id}/scan", response_model=List[CorpusFileResponse])
+def scan_corpus_files(corpus_id: str, db: Session = Depends(get_db)):
+    """
+    Scan the corpus path and add any .txt files found as corpus files.
+    Files are added with is_ingested=False.
+    """
+    # Get the corpus
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    # Check if corpus has a path
+    if not corpus.path:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Corpus does not have a path configured"
+        )
+    
+    # Check if path exists
+    if not os.path.exists(corpus.path):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Corpus path '{corpus.path}' does not exist"
+        )
+    
+    if not os.path.isdir(corpus.path):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Corpus path '{corpus.path}' is not a directory"
+        )
+    
+    # Scan for .txt files
+    txt_files = glob.glob(os.path.join(corpus.path, "*.txt"))
+    
+    if not txt_files:
+        return []
+    
+    # Get existing filenames to avoid duplicates
+    existing_files = db.query(CorpusFile.filename).filter(
+        CorpusFile.corpus_id == corpus_id
+    ).all()
+    existing_filenames = {file[0] for file in existing_files}
+    
+    # Create new corpus files for files not already in database
+    new_files = []
+    for file_path in sorted(txt_files):
+        filename = os.path.basename(file_path)
+        
+        # Skip if file already exists in database
+        if filename in existing_filenames:
+            continue
+        
+        # Create new corpus file
+        corpus_file = CorpusFile(
+            corpus_id=corpus_id,
+            filename=filename,
+            is_ingested=False
+        )
+        
+        db.add(corpus_file)
+        new_files.append(corpus_file)
+    
+    try:
+        db.commit()
+        # Refresh the new files to get their IDs and timestamps
+        for file in new_files:
+            db.refresh(file)
+        return new_files
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to add corpus files due to database constraint violation"
+        )
+
+@router.get("/{corpus_id}/files/{file_id}/cost_estimate", response_model=CorpusFileCostInfo)
+def get_corpus_file_cost_estimate(
+    corpus_id: str, 
+    file_id: str, 
+    model: str = "text-embedding-3-small",
+    db: Session = Depends(get_db)
+):
+    """
+    Get cost estimate for embedding a specific corpus file.
+    """
+    # Get the corpus
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    # Get the corpus file
+    corpus_file = db.query(CorpusFile).filter(
+        CorpusFile.id == file_id,
+        CorpusFile.corpus_id == corpus_id
+    ).first()
+    
+    if corpus_file is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus file with ID '{file_id}' not found in corpus '{corpus_id}'"
+        )
+    
+    # Get cost estimate
+    try:
+        cost_estimate = estimate_embedding_cost_for_corpus_file(corpus_file, corpus, model)
+        if cost_estimate is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Could not read file '{corpus_file.filename}' for cost estimation"
+            )
+        return cost_estimate
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.get("/{corpus_id}/cost_estimate", response_model=CorpusCostSummary)
+def get_corpus_cost_estimate(
+    corpus_id: str, 
+    model: str = "text-embedding-3-small",
+    include_ingested: bool = False,
+    db: Session = Depends(get_db)
+):
+    """
+    Get cost estimate for embedding all files in a corpus.
+    """
+    # Get the corpus with its files
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    # Get cost estimate
+    try:
+        cost_estimate = estimate_embedding_cost_for_corpus(corpus, model, include_ingested)
+        if cost_estimate is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No files found for cost estimation"
+            )
+        return cost_estimate
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         ) 
