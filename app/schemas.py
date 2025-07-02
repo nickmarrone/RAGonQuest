@@ -72,4 +72,41 @@ class CorpusResponse(CorpusBase):
     files: List[CorpusFileResponse] = Field(default=[], description="List of files in the corpus")
     
     class Config:
+        from_attributes = True
+
+# Conversation schemas
+class ConversationPartBase(BaseModel):
+    query: str = Field(..., min_length=1, description="User's query/question")
+    context_chunks: List[str] = Field(..., description="List of context chunks retrieved from vector database")
+    response: str = Field(..., description="AI's response")
+    sources: Optional[List[str]] = Field(None, description="List of source files used")
+    embedding_model_used: str = Field(..., description="Which embedding model was used")
+    completion_model_used: str = Field(..., description="Which completion model was used")
+    chunks_retrieved: int = Field(..., ge=0, description="Number of chunks retrieved")
+
+class ConversationPartCreate(ConversationPartBase):
+    pass
+
+class ConversationPartResponse(ConversationPartBase):
+    id: str = Field(..., description="Conversation part ID")
+    conversation_id: str = Field(..., description="Conversation ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    
+    class Config:
+        from_attributes = True
+
+class ConversationBase(BaseModel):
+    title: Optional[str] = Field(None, max_length=255, description="Optional title for the conversation")
+
+class ConversationCreate(ConversationBase):
+    query: str = Field(..., min_length=1, description="User's query/question")
+    limit: int = Field(default=25, ge=1, le=100, description="Maximum number of context chunks to retrieve")
+
+class ConversationResponse(ConversationBase):
+    id: str = Field(..., description="Conversation ID")
+    corpus_id: str = Field(..., description="Corpus ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    parts: List[ConversationPartResponse] = Field(default=[], description="List of conversation parts")
+    
+    class Config:
         from_attributes = True 

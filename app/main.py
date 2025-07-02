@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from .database import engine, qdrant_client
-from .routers import corpus
+from .routers import corpus, conversations
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,6 +11,7 @@ app = FastAPI(title="RAGonQuest", description="RAG Application with Qdrant and S
 
 # Include routers
 app.include_router(corpus.router)
+app.include_router(conversations.router)
 
 @app.get("/")
 async def root():
