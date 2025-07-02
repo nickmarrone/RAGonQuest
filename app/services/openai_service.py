@@ -64,6 +64,161 @@ class IngestResult:
     success: bool
     error_message: Optional[str] = None
 
+@dataclass
+class QueryResult:
+    """Result of querying a corpus."""
+    query: str
+    answer: str
+    context_chunks: List[str]
+    sources: List[str]
+    model_used: str
+    embedding_model_used: str
+    chunks_retrieved: int
+
+def search_qdrant(
+    query: str, 
+    openai_client: OpenAI, 
+    qdrant_client: QdrantClient, 
+    collection_name: str,
+    embedding_model: str = "text-embedding-3-small",
+    limit: int = 25
+) -> List[str]:
+    """
+    Search Qdrant for relevant context chunks based on a query.
+    
+    Args:
+        query: The search query
+        openai_client: OpenAI client instance
+        qdrant_client: Qdrant client instance
+        collection_name: Name of the Qdrant collection to search
+        embedding_model: Model to use for creating embeddings
+        limit: Maximum number of results to return
+        
+    Returns:
+        List of text chunks from the search results
+    """
+    # Create embedding for the query
+    embedding = openai_client.embeddings.create(
+        input=[query], 
+        model=embedding_model
+    ).data[0].embedding
+    
+    # Search Qdrant
+    hits = qdrant_client.search(
+        collection_name=collection_name, 
+        query_vector=embedding, 
+        limit=limit, 
+        with_payload=True
+    )
+    
+    # Extract text from payload
+    return [hit.payload["text"] for hit in hits]
+
+def query_corpus(
+    corpus: Corpus,
+    query: str,
+    openai_client: OpenAI,
+    qdrant_client: QdrantClient,
+    limit: int = 25,
+    embedding_model: Optional[str] = None,
+    completion_model: Optional[str] = None
+) -> QueryResult:
+    """
+    Query a corpus using embeddings and return an AI-generated answer.
+    
+    Args:
+        corpus: The Corpus object to query
+        query: The question to ask
+        openai_client: OpenAI client instance
+        qdrant_client: Qdrant client instance
+        limit: Maximum number of context chunks to retrieve
+        embedding_model: Model to use for creating embeddings
+        completion_model: Model to use for generating the answer
+        
+    Returns:
+        QueryResult with the answer and context information
+    """
+    try:
+        # Check if corpus has a Qdrant collection
+        if not corpus.qdrant_collection_name:
+            raise ValueError("Corpus does not have a Qdrant collection configured")
+        
+        # Use corpus models if not specified
+        embedding_model = embedding_model or corpus.embedding_model
+        completion_model = completion_model or corpus.completion_model
+        
+        # Search for relevant context chunks
+        context_chunks = search_qdrant(
+            query=query,
+            openai_client=openai_client,
+            qdrant_client=qdrant_client,
+            collection_name=corpus.qdrant_collection_name,
+            embedding_model=embedding_model,
+            limit=limit
+        )
+        
+        if not context_chunks:
+            return QueryResult(
+                query=query,
+                answer="I couldn't find any relevant information in the corpus to answer your question.",
+                context_chunks=[],
+                sources=[],
+                model_used=completion_model,
+                embedding_model_used=embedding_model,
+                chunks_retrieved=0
+            )
+        
+        # Create context from chunks
+        context = "\n\n".join(context_chunks)
+        
+        # Create prompt using corpus default prompt or a generic one
+        system_prompt = corpus.default_prompt if corpus.default_prompt else "You are a helpful assistant. Answer questions based only on the provided context."
+        
+        user_prompt = f"""Context:
+{context}
+
+Q: {query}
+A:"""
+        
+        # Generate answer using OpenAI
+        response = openai_client.chat.completions.create(
+            model=completion_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        
+        answer = response.choices[0].message.content
+        
+        # Extract unique sources from context chunks (if available in payload)
+        sources = list(set([
+            chunk.split("source_file: ")[1].split("\n")[0] 
+            for chunk in context_chunks 
+            if "source_file: " in chunk
+        ])) if any("source_file: " in chunk for chunk in context_chunks) else []
+        
+        return QueryResult(
+            query=query,
+            answer=answer,
+            context_chunks=context_chunks,
+            sources=sources,
+            model_used=completion_model,
+            embedding_model_used=embedding_model,
+            chunks_retrieved=len(context_chunks)
+        )
+        
+    except Exception as e:
+        return QueryResult(
+            query=query,
+            answer=f"Error processing query: {str(e)}",
+            context_chunks=[],
+            sources=[],
+            model_used=completion_model,
+            embedding_model_used=embedding_model,
+            chunks_retrieved=0
+        )
+
 def chunk_text(text: str, tokenizer, max_tokens: int = 512, overlap: int = 50) -> List[str]:
     """
     Tokenize and chunk text into overlapping segments.
@@ -293,7 +448,7 @@ def estimate_embedding_cost_for_folder(
 def estimate_embedding_cost_for_corpus_file(
     corpus_file: CorpusFile,
     corpus: Corpus,
-    model: str = "text-embedding-3-small"
+    model: Optional[str] = None
 ) -> Optional[CorpusFileCostInfo]:
     """
     Estimate the cost of embedding a single corpus file.
@@ -310,6 +465,9 @@ def estimate_embedding_cost_for_corpus_file(
         ValueError: If the model is not supported
         FileNotFoundError: If the corpus path doesn't exist
     """
+    # Use corpus model if not specified
+    model = model or corpus.embedding_model
+    
     if model not in PRICING:
         raise ValueError(f"Unknown model: {model}")
     
@@ -348,7 +506,7 @@ def estimate_embedding_cost_for_corpus_file(
 
 def estimate_embedding_cost_for_corpus(
     corpus: Corpus,
-    model: str = "text-embedding-3-small",
+    model: Optional[str] = None,
     include_ingested: bool = False
 ) -> Optional[CorpusCostSummary]:
     """
@@ -366,6 +524,9 @@ def estimate_embedding_cost_for_corpus(
         ValueError: If the model is not supported
         FileNotFoundError: If the corpus path doesn't exist
     """
+    # Use corpus model if not specified
+    model = model or corpus.embedding_model
+    
     if model not in PRICING:
         raise ValueError(f"Unknown model: {model}")
     

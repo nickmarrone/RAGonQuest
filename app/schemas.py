@@ -19,6 +19,8 @@ class CorpusBase(BaseModel):
     default_prompt: str = Field(..., min_length=1, description="Default prompt for the corpus")
     qdrant_collection_name: str = Field(..., min_length=1, max_length=255, description="Qdrant collection name")
     path: str = Field(..., min_length=1, max_length=500, description="Path to the corpus directory")
+    embedding_model: str = Field(default="text-embedding-3-small", min_length=1, max_length=100, description="OpenAI embedding model to use")
+    completion_model: str = Field(default="gpt-4o-mini", min_length=1, max_length=100, description="OpenAI completion model to use")
     
     @field_validator('path')
     @classmethod
@@ -35,6 +37,8 @@ class CorpusUpdate(BaseModel):
     default_prompt: Optional[str] = Field(None, min_length=1, description="Default prompt for the corpus")
     qdrant_collection_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Qdrant collection name")
     path: Optional[str] = Field(None, min_length=1, max_length=500, description="Path to the corpus directory")
+    embedding_model: Optional[str] = Field(None, min_length=1, max_length=100, description="OpenAI embedding model to use")
+    completion_model: Optional[str] = Field(None, min_length=1, max_length=100, description="OpenAI completion model to use")
     
     @field_validator('path')
     @classmethod

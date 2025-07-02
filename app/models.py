@@ -17,6 +17,8 @@ class Corpus(Base):
     default_prompt = Column(Text, nullable=False)
     qdrant_collection_name = Column(String(255), nullable=False)
     path = Column(String(500), nullable=False)  # Path to the corpus directory
+    embedding_model = Column(String(100), nullable=False, default="text-embedding-3-small")  # OpenAI embedding model
+    completion_model = Column(String(100), nullable=False, default="gpt-4o-mini")  # OpenAI completion model
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
     

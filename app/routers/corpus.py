@@ -14,7 +14,9 @@ from ..services.openai_service import (
     CorpusFileCostInfo, 
     CorpusCostSummary,
     ingest_file_to_qdrant,
-    IngestResult
+    IngestResult,
+    query_corpus,
+    QueryResult
 )
 from openai import OpenAI
 from qdrant_client import QdrantClient
@@ -194,7 +196,6 @@ def scan_corpus_files(corpus_id: str, db: Session = Depends(get_db)):
 def get_corpus_file_cost_estimate(
     corpus_id: str, 
     file_id: str, 
-    model: str = "text-embedding-3-small",
     db: Session = Depends(get_db)
 ):
     """
@@ -220,9 +221,9 @@ def get_corpus_file_cost_estimate(
             detail=f"Corpus file with ID '{file_id}' not found in corpus '{corpus_id}'"
         )
     
-    # Get cost estimate
+    # Get cost estimate using corpus model
     try:
-        cost_estimate = estimate_embedding_cost_for_corpus_file(corpus_file, corpus, model)
+        cost_estimate = estimate_embedding_cost_for_corpus_file(corpus_file, corpus)
         if cost_estimate is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -243,7 +244,6 @@ def get_corpus_file_cost_estimate(
 @router.get("/{corpus_id}/cost_estimate", response_model=CorpusCostSummary)
 def get_corpus_cost_estimate(
     corpus_id: str, 
-    model: str = "text-embedding-3-small",
     include_ingested: bool = False,
     db: Session = Depends(get_db)
 ):
@@ -258,9 +258,9 @@ def get_corpus_cost_estimate(
             detail=f"Corpus with ID '{corpus_id}' not found"
         )
     
-    # Get cost estimate
+    # Get cost estimate using corpus model
     try:
-        cost_estimate = estimate_embedding_cost_for_corpus(corpus, model, include_ingested)
+        cost_estimate = estimate_embedding_cost_for_corpus(corpus, include_ingested=include_ingested)
         if cost_estimate is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -375,4 +375,62 @@ def ingest_corpus_files(
             detail="Failed to update ingestion status due to database constraint violation"
         )
     
-    return results 
+    return results
+
+@router.post("/{corpus_id}/query", response_model=QueryResult)
+def query_corpus_endpoint(
+    corpus_id: str,
+    query: str,
+    limit: int = 25,
+    db: Session = Depends(get_db)
+):
+    """
+    Query a corpus with a question and get an AI-generated answer based on retrieved context.
+    """
+    # Get the corpus
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    # Check if corpus has a Qdrant collection
+    if not corpus.qdrant_collection_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Corpus does not have a Qdrant collection configured"
+        )
+    
+    # Initialize clients
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OPENAI_API_KEY not configured"
+        )
+    
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+    openai_client = OpenAI(api_key=openai_api_key)
+    qdrant_client = QdrantClient(url=qdrant_url)
+    
+    # Query the corpus using corpus models
+    try:
+        result = query_corpus(
+            corpus=corpus,
+            query=query,
+            openai_client=openai_client,
+            qdrant_client=qdrant_client,
+            limit=limit
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error querying corpus: {str(e)}"
+        ) 
