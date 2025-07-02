@@ -96,6 +96,7 @@ def update_corpus(corpus_id: str, corpus_update: CorpusUpdate, db: Session = Dep
         setattr(db_corpus, field, value)
     
     try:
+        # TODO: This is not updating the updated_at field
         db.commit()
         db.refresh(db_corpus)
         return db_corpus
@@ -266,4 +267,28 @@ def get_corpus_cost_estimate(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
+
+@router.delete("/{corpus_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_corpus(corpus_id: str, db: Session = Depends(get_db)):
+    """
+    Delete a corpus and all its associated files.
+    This operation is idempotent - returns 204 even if the corpus doesn't exist.
+    """
+    # Get the corpus
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        # Return 204 for idempotency - corpus doesn't exist, which is the desired state
+        return None
+    
+    try:
+        # Delete the corpus (corpus files will be deleted automatically due to cascade)
+        db.delete(corpus)
+        db.commit()
+        return None
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to delete corpus due to database constraint violation"
         ) 
