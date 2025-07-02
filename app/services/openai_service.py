@@ -1,9 +1,13 @@
 import os
 import glob
 import tiktoken
+import uuid
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from ..models import Corpus, CorpusFile
+from openai import OpenAI
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
 
 # OpenAI embedding model pricing
 PRICING = {
@@ -49,6 +53,176 @@ class CorpusCostSummary:
     file_count: int
     ingested_count: int
     uningested_count: int
+
+@dataclass
+class IngestResult:
+    """Result of ingesting a file into Qdrant."""
+    corpus_file_id: str
+    filename: str
+    chunks_processed: int
+    points_created: int
+    success: bool
+    error_message: Optional[str] = None
+
+def chunk_text(text: str, tokenizer, max_tokens: int = 512, overlap: int = 50) -> List[str]:
+    """
+    Tokenize and chunk text into overlapping segments.
+    
+    Args:
+        text: Text to chunk
+        tokenizer: Tiktoken tokenizer instance
+        max_tokens: Maximum tokens per chunk
+        overlap: Number of overlapping tokens between chunks
+        
+    Returns:
+        List of text chunks
+    """
+    tokens = tokenizer.encode(text)
+    chunks = []
+    for i in range(0, len(tokens), max_tokens - overlap):
+        chunk = tokens[i:i + max_tokens]
+        chunks.append(tokenizer.decode(chunk))
+    return chunks
+
+def embed_text_batch(texts: List[str], client: OpenAI, model: str = "text-embedding-3-small") -> List[List[float]]:
+    """
+    Create embeddings for a batch of texts.
+    
+    Args:
+        texts: List of texts to embed
+        client: OpenAI client instance
+        model: Embedding model to use
+        
+    Returns:
+        List of embedding vectors
+    """
+    response = client.embeddings.create(input=texts, model=model)
+    return [item.embedding for item in response.data]
+
+def ingest_file_to_qdrant(
+    corpus_file: CorpusFile,
+    qdrant_client: QdrantClient,
+    openai_client: OpenAI,
+    chunk_size: int = 512,
+    chunk_overlap: int = 50,
+    batch_size: int = 10
+) -> IngestResult:
+    """
+    Ingest a single file into Qdrant vector database.
+    
+    Args:
+        corpus_file: The CorpusFile object to ingest (must have corpus relationship loaded)
+        qdrant_client: Qdrant client instance
+        openai_client: OpenAI client instance
+        chunk_size: Maximum tokens per chunk
+        chunk_overlap: Number of overlapping tokens between chunks
+        batch_size: Number of chunks to process in each batch
+        
+    Returns:
+        IngestResult with processing details
+    """
+    try:
+        # Get corpus from relationship
+        corpus = corpus_file.corpus
+        if not corpus:
+            return IngestResult(
+                corpus_file_id=corpus_file.id,
+                filename=corpus_file.filename,
+                chunks_processed=0,
+                points_created=0,
+                success=False,
+                error_message="Corpus relationship not loaded"
+            )
+        
+        # Check if file exists in corpus path
+        file_path = os.path.join(corpus.path, corpus_file.filename)
+        if not os.path.exists(file_path):
+            return IngestResult(
+                corpus_file_id=corpus_file.id,
+                filename=corpus_file.filename,
+                chunks_processed=0,
+                points_created=0,
+                success=False,
+                error_message=f"File '{corpus_file.filename}' not found at path '{corpus.path}'"
+            )
+        
+        # Use model from corpus (default to text-embedding-3-small if not specified)
+        model = getattr(corpus, 'embedding_model', 'text-embedding-3-small')
+        
+        # Initialize tokenizer
+        tokenizer = tiktoken.encoding_for_model(model)
+        
+        # Ensure Qdrant collection exists
+        collection_name = corpus.qdrant_collection_name
+        if not qdrant_client.collection_exists(collection_name):
+            # Get embedding size based on model
+            embedding_size = 1536 if model == "text-embedding-3-small" else 3072
+            qdrant_client.create_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(size=embedding_size, distance=Distance.COSINE)
+            )
+        
+        # Read and chunk the file
+        with open(file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        
+        chunks = chunk_text(text, tokenizer, chunk_size, chunk_overlap)
+        
+        if not chunks:
+            return IngestResult(
+                corpus_file_id=corpus_file.id,
+                filename=corpus_file.filename,
+                chunks_processed=0,
+                points_created=0,
+                success=False,
+                error_message="No chunks generated from file content"
+            )
+        
+        # Process chunks in batches
+        total_points = 0
+        for i in range(0, len(chunks), batch_size):
+            batch_chunks = chunks[i:i + batch_size]
+            
+            # Create embeddings for the batch
+            embeddings = embed_text_batch(batch_chunks, openai_client, model)
+            
+            # Create points for Qdrant
+            points = [
+                PointStruct(
+                    id=str(uuid.uuid4()),
+                    vector=embedding,
+                    payload={
+                        "text": chunk,
+                        "source_file": corpus_file.filename,
+                        "corpus_id": corpus.id,
+                        "corpus_name": corpus.name,
+                        "chunk_index": i + j
+                    }
+                )
+                for j, (chunk, embedding) in enumerate(zip(batch_chunks, embeddings))
+            ]
+            
+            # Upsert points to Qdrant
+            qdrant_client.upsert(collection_name=collection_name, points=points)
+            total_points += len(points)
+        
+        return IngestResult(
+            corpus_file_id=corpus_file.id,
+            filename=corpus_file.filename,
+            chunks_processed=len(chunks),
+            points_created=total_points,
+            success=True
+        )
+        
+    except Exception as e:
+        return IngestResult(
+            corpus_file_id=corpus_file.id,
+            filename=corpus_file.filename,
+            chunks_processed=0,
+            points_created=0,
+            success=False,
+            error_message=str(e)
+        )
 
 def estimate_embedding_cost_for_folder(
     folder_path: str, 

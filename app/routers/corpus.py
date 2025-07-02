@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -8,7 +8,16 @@ import glob
 from ..database import get_db
 from ..models import Corpus, CorpusFile
 from ..schemas import CorpusCreate, CorpusUpdate, CorpusResponse, CorpusFileResponse, validate_path_exists_and_is_directory
-from ..services.openai_service import estimate_embedding_cost_for_corpus_file, estimate_embedding_cost_for_corpus, CorpusFileCostInfo, CorpusCostSummary
+from ..services.openai_service import (
+    estimate_embedding_cost_for_corpus_file, 
+    estimate_embedding_cost_for_corpus, 
+    CorpusFileCostInfo, 
+    CorpusCostSummary,
+    ingest_file_to_qdrant,
+    IngestResult
+)
+from openai import OpenAI
+from qdrant_client import QdrantClient
 
 router = APIRouter(prefix="/corpora", tags=["corpora"])
 
@@ -291,4 +300,79 @@ def delete_corpus(corpus_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to delete corpus due to database constraint violation"
-        ) 
+        )
+
+@router.post("/{corpus_id}/ingest", response_model=List[IngestResult])
+def ingest_corpus_files(
+    corpus_id: str,
+    chunk_size: int = 512,
+    chunk_overlap: int = 50,
+    batch_size: int = 10,
+    db: Session = Depends(get_db)
+):
+    """
+    Ingest all uningested files in a corpus into Qdrant.
+    """
+    # Get the corpus with its files
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    # Get uningested files
+    uningested_files = db.query(CorpusFile).filter(
+        CorpusFile.corpus_id == corpus_id,
+        CorpusFile.is_ingested == False
+    ).all()
+    
+    if not uningested_files:
+        return []
+    
+    # Initialize clients
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OPENAI_API_KEY not configured"
+        )
+    
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+    openai_client = OpenAI(api_key=openai_api_key)
+    qdrant_client = QdrantClient(url=qdrant_url)
+    
+    # Load corpus relationship for all files
+    for file in uningested_files:
+        file.corpus = corpus
+    
+    # Ingest each file
+    results = []
+    for corpus_file in uningested_files:
+        result = ingest_file_to_qdrant(
+            corpus_file=corpus_file,
+            qdrant_client=qdrant_client,
+            openai_client=openai_client,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            batch_size=batch_size
+        )
+        
+        # Update ingestion status in database
+        if result.success:
+            corpus_file.is_ingested = True
+            corpus_file.updated_at = datetime.now(timezone.utc)
+        
+        results.append(result)
+    
+    # Commit all changes
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to update ingestion status due to database constraint violation"
+        )
+    
+    return results 
