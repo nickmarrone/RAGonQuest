@@ -54,6 +54,7 @@ class CorpusFileUpdate(BaseModel):
 class CorpusFileResponse(CorpusFileBase):
     id: str = Field(..., description="Corpus file ID")
     corpus_id: str = Field(..., description="Corpus ID")
+    is_ingested: bool = Field(..., description="Whether the file has been ingested into the vector database")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     
@@ -63,6 +64,7 @@ class CorpusFileResponse(CorpusFileBase):
 class CorpusResponse(CorpusBase):
     id: str = Field(..., description="Corpus ID")
     created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
     files: List[CorpusFileResponse] = Field(default=[], description="List of files in the corpus")
     
     class Config:
