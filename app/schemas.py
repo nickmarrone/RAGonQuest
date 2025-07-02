@@ -102,6 +102,10 @@ class ConversationCreate(ConversationBase):
     query: str = Field(..., min_length=1, description="User's query/question")
     limit: int = Field(default=25, ge=1, le=100, description="Maximum number of context chunks to retrieve")
 
+class ConversationContinue(BaseModel):
+    query: str = Field(..., min_length=1, description="User's new query/question")
+    limit: int = Field(default=25, ge=1, le=100, description="Maximum number of context chunks to retrieve")
+
 class ConversationResponse(ConversationBase):
     id: str = Field(..., description="Conversation ID")
     corpus_id: str = Field(..., description="Corpus ID")
