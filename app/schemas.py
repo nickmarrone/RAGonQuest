@@ -1,14 +1,30 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional, List, Dict, Any, ClassVar
 from datetime import datetime
+import os
 from uuid import UUID
+
+def validate_path_exists_and_is_directory(path: str) -> str:
+    """Validate that a path exists and is a directory if provided"""
+    if path and path.strip():  # Only validate if path is not empty
+        if not os.path.exists(path):
+            raise ValueError(f"Path '{path}' does not exist")
+        if not os.path.isdir(path):
+            raise ValueError(f"Path '{path}' is not a directory")
+    return path
 
 class CorpusBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Name of the corpus")
-    description: Optional[str] = Field("", description="Description of the corpus")
-    default_prompt: Optional[str] = Field("", min_length=1, description="Default prompt for the corpus")
-    qdrant_collection_name: Optional[str] = Field("", min_length=1, max_length=255, description="Qdrant collection name")
-    path: Optional[str] = Field("", min_length=1, max_length=500, description="Path to the corpus directory")
+    description: Optional[str] = Field(None, description="Description of the corpus")
+    default_prompt: str = Field(..., min_length=1, description="Default prompt for the corpus")
+    qdrant_collection_name: str = Field(..., min_length=1, max_length=255, description="Qdrant collection name")
+    path: str = Field(..., min_length=1, max_length=500, description="Path to the corpus directory")
+    
+    @field_validator('path')
+    @classmethod
+    def validate_path(cls, v):
+        """Validate that the path exists and is a directory if provided"""
+        return validate_path_exists_and_is_directory(v)
 
 class CorpusCreate(CorpusBase):
     pass
@@ -19,6 +35,12 @@ class CorpusUpdate(BaseModel):
     default_prompt: Optional[str] = Field(None, min_length=1, description="Default prompt for the corpus")
     qdrant_collection_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Qdrant collection name")
     path: Optional[str] = Field(None, min_length=1, max_length=500, description="Path to the corpus directory")
+    
+    @field_validator('path')
+    @classmethod
+    def validate_path(cls, v):
+        """Validate that the path exists and is a directory if provided"""
+        return validate_path_exists_and_is_directory(v)
 
 class CorpusFileBase(BaseModel):
     filename: str = Field(..., min_length=1, max_length=255, description="Name of the file")

@@ -6,7 +6,7 @@ import os
 import glob
 from ..database import get_db
 from ..models import Corpus, CorpusFile
-from ..schemas import CorpusCreate, CorpusUpdate, CorpusResponse, CorpusFileResponse
+from ..schemas import CorpusCreate, CorpusUpdate, CorpusResponse, CorpusFileResponse, validate_path_exists_and_is_directory
 from ..services.openai_service import estimate_embedding_cost_for_corpus_file, estimate_embedding_cost_for_corpus, CorpusFileCostInfo, CorpusCostSummary
 
 router = APIRouter(prefix="/corpora", tags=["corpora"])
@@ -23,20 +23,6 @@ def create_corpus(corpus: CorpusCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Corpus with name '{corpus.name}' already exists"
         )
-    
-    # Validate that the path exists and is a directory (only if path is provided)
-    if len(corpus.path) > 0:
-        if not os.path.exists(corpus.path):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Path '{corpus.path}' does not exist"
-            )
-        
-        if not os.path.isdir(corpus.path):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Path '{corpus.path}' is not a directory"
-            )
     
     db_corpus = Corpus(
         name=corpus.name,
@@ -103,20 +89,6 @@ def update_corpus(corpus_id: str, corpus_update: CorpusUpdate, db: Session = Dep
                 detail=f"Corpus with name '{corpus_update.name}' already exists"
             )
     
-    # Validate path if it's being updated
-    if corpus_update.path is not None and corpus_update.path:
-        if not os.path.exists(corpus_update.path):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Path '{corpus_update.path}' does not exist"
-            )
-        
-        if not os.path.isdir(corpus_update.path):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Path '{corpus_update.path}' is not a directory"
-            )
-    
     # Update only provided fields
     update_data = corpus_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -154,17 +126,13 @@ def scan_corpus_files(corpus_id: str, db: Session = Depends(get_db)):
             detail="Corpus does not have a path configured"
         )
     
-    # Check if path exists
-    if not os.path.exists(corpus.path):
+    # Validate path using schema helper function
+    try:
+        validate_path_exists_and_is_directory(corpus.path)
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Corpus path '{corpus.path}' does not exist"
-        )
-    
-    if not os.path.isdir(corpus.path):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Corpus path '{corpus.path}' is not a directory"
+            detail=str(e)
         )
     
     # Scan for .txt files
