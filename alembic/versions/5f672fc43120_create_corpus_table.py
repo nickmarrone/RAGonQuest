@@ -24,11 +24,12 @@ def upgrade() -> None:
     op.create_table('corpora',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=False),
     sa.Column('default_prompt', sa.Text(), nullable=False),
     sa.Column('qdrant_collection_name', sa.String(length=255), nullable=False),
     sa.Column('path', sa.String(length=500), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_corpora_name', 'corpora', ['name'])

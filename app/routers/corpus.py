@@ -25,7 +25,7 @@ def create_corpus(corpus: CorpusCreate, db: Session = Depends(get_db)):
         )
     
     # Validate that the path exists and is a directory (only if path is provided)
-    if corpus.path:
+    if len(corpus.path) > 0:
         if not os.path.exists(corpus.path):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -59,11 +59,11 @@ def create_corpus(corpus: CorpusCreate, db: Session = Depends(get_db)):
         )
 
 @router.get("/", response_model=List[CorpusResponse])
-def get_corpora(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_corpora(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     Retrieve a list of all corpora with pagination support.
     """
-    corpora = db.query(Corpus).offset(skip).limit(limit).all()
+    corpora = db.query(Corpus).offset(offset).limit(limit).all()
     return corpora
 
 @router.get("/{corpus_id}", response_model=CorpusResponse)
@@ -118,7 +118,7 @@ def update_corpus(corpus_id: str, corpus_update: CorpusUpdate, db: Session = Dep
             )
     
     # Update only provided fields
-    update_data = corpus_update.dict(exclude_unset=True)
+    update_data = corpus_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_corpus, field, value)
     
