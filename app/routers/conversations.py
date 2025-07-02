@@ -13,6 +13,100 @@ from qdrant_client import QdrantClient
 
 router = APIRouter(prefix="/corpora", tags=["conversations"])
 
+@router.get("/{corpus_id}/conversations", response_model=List[ConversationResponse])
+def list_conversations(
+    corpus_id: str,
+    offset: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a list of conversations for a specific corpus.
+    Supports pagination.
+    """
+    # Verify corpus exists
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    conversations = db.query(Conversation).filter(
+        Conversation.corpus_id == corpus_id
+    ).offset(offset).limit(limit).all()
+    
+    return conversations
+
+@router.get("/{corpus_id}/conversations/{conversation_id}", response_model=ConversationResponse)
+def get_conversation(
+    corpus_id: str,
+    conversation_id: str, 
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a specific conversation by ID within a corpus.
+    """
+    # Verify corpus exists
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.corpus_id == corpus_id
+    ).first()
+    
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversation with ID '{conversation_id}' not found in corpus '{corpus_id}'"
+        )
+    
+    return conversation
+
+@router.delete("/{corpus_id}/conversations/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_conversation(
+    corpus_id: str,
+    conversation_id: str, 
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a conversation and all its parts within a corpus.
+    This operation is idempotent - returns 204 even if the conversation doesn't exist.
+    """
+    # Verify corpus exists
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.corpus_id == corpus_id
+    ).first()
+    
+    if conversation is None:
+        # Return 204 for idempotency - conversation doesn't exist, which is the desired state
+        return None
+    
+    try:
+        # Delete the conversation (conversation parts will be deleted automatically due to cascade)
+        db.delete(conversation)
+        db.commit()
+        return None
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to delete conversation due to database constraint violation"
+        )
+
 @router.post("/{corpus_id}/conversations", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
 def create_conversation(
     corpus_id: str,
@@ -101,8 +195,9 @@ def create_conversation(
             detail=f"Error creating conversation: {str(e)}"
         )
 
-@router.post("/conversations/{conversation_id}/continue", response_model=ConversationResponse)
+@router.post("/{corpus_id}/conversations/{conversation_id}/continue", response_model=ConversationResponse)
 def continue_conversation(
+    corpus_id: str,
     conversation_id: str,
     conversation_data: ConversationContinue,
     db: Session = Depends(get_db)
@@ -111,20 +206,24 @@ def continue_conversation(
     Continue an existing conversation by adding a new conversation part.
     The AI will receive the full conversation history including previous queries, contexts, and responses.
     """
+    # Verify corpus exists
+    corpus = db.query(Corpus).filter(Corpus.id == corpus_id).first()
+    if corpus is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Corpus with ID '{corpus_id}' not found"
+        )
+    
     # Get the conversation with its parts
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id,
+        Conversation.corpus_id == corpus_id
+    ).first()
+    
     if conversation is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Conversation with ID '{conversation_id}' not found"
-        )
-    
-    # Get the corpus
-    corpus = conversation.corpus
-    if not corpus:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Corpus not found for this conversation"
+            detail=f"Conversation with ID '{conversation_id}' not found in corpus '{corpus_id}'"
         )
     
     # Check if corpus has a Qdrant collection
