@@ -1,6 +1,7 @@
 import './App.css'
 import Corpora from './components/Corpora';
 import ConversationsList from './components/ConversationsList';
+import ConversationView from './components/ConversationView';
 
 function App() {
 
@@ -13,8 +14,7 @@ function App() {
       </div>
       {/* Main Content */}
       <div className="flex-1 p-10 overflow-y-auto">
-        <h1 className="text-2xl font-bold mb-4">Main Content</h1>
-        <p>This is where your main content will appear.</p>
+        <ConversationView />
       </div>
     </div>
   );

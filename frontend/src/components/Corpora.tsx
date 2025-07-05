@@ -1,16 +1,9 @@
 import React, { useEffect } from "react";
 import { useAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
+import type { Corpus } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-type Corpus = {
-  id: string;
-  name: string;
-  description: string;
-  updated_at: string;
-  // ...add other fields as needed
-};
 
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);

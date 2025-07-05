@@ -1,24 +1,22 @@
 import React, { useEffect } from "react";
 import { useAtom } from "jotai";
-import { conversationsAtom } from "../atoms/conversationsAtoms";
+import { conversationsAtom, activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
-
-type Conversation = {
-  id: string;
-  title?: string;
-  created_at: string;
-  // ...add other fields as needed
-};
+import type { Conversation } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ConversationsList: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [conversations, setConversations] = useAtom(conversationsAtom);
+  const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
+  const [, setConversationParts] = useAtom(conversationPartsAtom);
 
   useEffect(() => {
     if (!activeCorpus) {
       setConversations([]);
+      setActiveConversation(null);
+      setConversationParts([]);
       return;
     }
     fetch(`${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`)
@@ -30,7 +28,12 @@ const ConversationsList: React.FC = () => {
         );
         setConversations(sorted);
       });
-  }, [activeCorpus, setConversations]);
+  }, [activeCorpus, setConversations, setActiveConversation, setConversationParts]);
+
+  const handleConversationSelect = async (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    setConversationParts(conversation.parts);
+  };
 
   if (!activeCorpus) {
     return <div className="mt-6 text-zinc-400">Select a corpus to see conversations.</div>;
@@ -43,8 +46,12 @@ const ConversationsList: React.FC = () => {
         {conversations.map((conv) => (
           <li
             key={conv.id}
-            className="p-2 rounded mb-2 bg-zinc-800 hover:bg-zinc-700 cursor-pointer"
-            // onClick={() => ...} // Add selection logic if needed
+            className={`p-2 rounded mb-2 cursor-pointer transition-colors ${
+              activeConversation?.id === conv.id 
+                ? 'bg-blue-600 hover:bg-blue-700' 
+                : 'bg-zinc-800 hover:bg-zinc-700'
+            }`}
+            onClick={() => handleConversationSelect(conv)}
           >
             <div className="font-medium">{conv.title || "Untitled"}</div>
             <div className="text-xs text-zinc-400">
