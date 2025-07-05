@@ -1,4 +1,22 @@
-# Use Python 3.11 slim as base image
+# Multi-stage build for frontend and backend
+FROM node:18-alpine AS frontend-builder
+
+# Set work directory for frontend
+WORKDIR /frontend
+
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source code
+COPY frontend/ .
+
+# Build the frontend
+RUN npm run build
+
+# Python backend stage
 FROM python:3.11-slim
 
 # Set environment variables
@@ -26,6 +44,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy application code
 COPY . .
+
+# Copy built frontend files from the frontend-builder stage
+COPY --from=frontend-builder /frontend/dist ./static
 
 # Create data directory for SQLite database
 RUN mkdir -p data

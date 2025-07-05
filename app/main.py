@@ -1,7 +1,8 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from .database import engine, qdrant_client
 from .routers import corpus, conversations
@@ -10,6 +11,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI(title="RAGonQuest", description="RAG Application with Qdrant and SQLite")
+
+# Mount static files for the frontend
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")     # For development
 app.add_middleware(
@@ -26,6 +31,9 @@ app.include_router(conversations.router)
 
 @app.get("/")
 async def root():
+    """Serve the frontend application or API info if frontend not available."""
+    if os.path.exists("static/index.html"):
+        return FileResponse("static/index.html")
     return {"message": "RAGonQuest API"}
 
 @app.get("/health")
@@ -57,6 +65,19 @@ async def health_check():
         return JSONResponse(content=health_status, status_code=200)
     else:
         return JSONResponse(content=health_status, status_code=503)
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str, request: Request):
+    """Catch-all route for client-side routing."""
+    # Don't interfere with API routes
+    if full_path.startswith(("corpora", "health", "docs", "openapi.json", "static")):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve the frontend for all other routes
+    if os.path.exists("static/index.html"):
+        return FileResponse("static/index.html")
+    else:
+        raise HTTPException(status_code=404, detail="Not found")
 
 if __name__ == "__main__":
     import uvicorn

@@ -4,8 +4,6 @@ import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import type { Corpus } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
@@ -14,7 +12,7 @@ const Corpora: React.FC = () => {
   const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/corpora`)
+    fetch(`/corpora`)
       .then((res) => res.json())
       .then((data: Corpus[]) => {
         // Sort by updated_at descending
@@ -35,9 +33,21 @@ const Corpora: React.FC = () => {
     }
   };
 
+  const handleNewCorpus = () => {
+    // TODO: Implement new corpus creation
+  };
+
   return (
     <div>
-      <h2 className="text-lg font-bold mb-4">Corpora</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-bold mb-4">Corpora</h2>
+        <button
+            onClick={handleNewCorpus}
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+          >
+          New
+        </button>
+      </div>
       <ul>
         {corpora.map((corpus: Corpus) => (
           <li

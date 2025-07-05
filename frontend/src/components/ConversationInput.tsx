@@ -9,8 +9,6 @@ import {
 } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
@@ -50,7 +48,7 @@ const ConversationInput: React.FC = () => {
       if (isNewConversationMode) {
         // Create a new conversation
         response = await fetch(
-          `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`,
+          `/corpora/${activeCorpus.id}/conversations`,
           {
             method: "POST",
             headers: {
@@ -66,7 +64,7 @@ const ConversationInput: React.FC = () => {
       } else {
         // Continue existing conversation
         response = await fetch(
-          `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`,
+          `/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`,
           {
             method: "POST",
             headers: {
