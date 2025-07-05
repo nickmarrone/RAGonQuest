@@ -9,7 +9,7 @@ const ConversationsList: React.FC = () => {
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
-  const [isNewConversationMode, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
+  const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
 
   const fetchConversations = async () => {
     if (!activeCorpus) {

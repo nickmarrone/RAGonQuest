@@ -5,10 +5,14 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from .database import engine, qdrant_client
+from .models import Base
 from .routers import corpus, conversations
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="RAGonQuest", description="RAG Application with Qdrant and SQLite")
 
@@ -66,6 +70,7 @@ async def health_check():
     else:
         return JSONResponse(content=health_status, status_code=503)
 
+# Catch-all route for client-side routing - must be last
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str, request: Request):
     """Catch-all route for client-side routing."""
