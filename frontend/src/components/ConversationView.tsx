@@ -1,11 +1,44 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAtom } from "jotai";
 import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
 import type { ConversationPart } from "../types";
 
-const ConversationView: React.FC = () => {
+interface ConversationViewProps {
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
   const [activeConversation] = useAtom(activeConversationAtom);
   const [conversationParts] = useAtom(conversationPartsAtom);
+
+  // Scroll to bottom when conversation or parts change
+  useEffect(() => {
+    if (scrollContainerRef.current && conversationParts.length > 0) {
+      // Try multiple approaches to ensure scrolling works
+      const scrollToBottom = () => {
+        if (scrollContainerRef.current) {
+          const container = scrollContainerRef.current;
+          // Method 1: Direct scrollTop assignment
+          container.scrollTop = container.scrollHeight;
+          // Method 2: Smooth scroll as fallback
+          setTimeout(() => {
+            if (container.scrollTop !== container.scrollHeight) {
+              container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+              });
+            }
+          }, 50);
+        }
+      };
+      // Try immediate scroll
+      scrollToBottom();
+      // Try delayed scroll to ensure content is rendered
+      setTimeout(scrollToBottom, 100);
+      // Try another delayed scroll as backup
+      setTimeout(scrollToBottom, 300);
+    }
+  }, [activeConversation, conversationParts, scrollContainerRef]);
 
   if (!activeConversation) {
     return (

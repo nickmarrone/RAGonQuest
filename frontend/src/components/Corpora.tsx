@@ -25,9 +25,12 @@ const Corpora: React.FC = () => {
   }, [setCorpora]);
 
   const handleCorpusSelect = (corpus: Corpus) => {
-    setActiveCorpus(corpus);
-    setActiveConversation(null);
-    setConversationParts([]);
+    // Only clear conversations if the corpus actually changes
+    if (activeCorpus?.id !== corpus.id) {
+      setActiveCorpus(corpus);
+      setActiveConversation(null);
+      setConversationParts([]);
+    }
   };
 
   return (

@@ -1,9 +1,11 @@
 import './App.css'
+import { useRef } from 'react';
 import Corpora from './components/Corpora';
 import ConversationsList from './components/ConversationsList';
 import ConversationView from './components/ConversationView';
 
 function App() {
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="flex h-screen bg-zinc-900 text-white overflow-hidden">
@@ -14,8 +16,8 @@ function App() {
       </div>
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 p-6 overflow-y-auto">
-          <ConversationView />
+        <div className="flex-1 p-6 overflow-y-auto" ref={mainContentRef}>
+          <ConversationView scrollContainerRef={mainContentRef} />
         </div>
       </div>
     </div>
