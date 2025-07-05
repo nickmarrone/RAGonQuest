@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { useAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 type Corpus = {
   id: string;
   name: string;
@@ -15,7 +17,7 @@ const Corpora: React.FC = () => {
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
 
   useEffect(() => {
-    fetch("/corpora") // Adjust if your API is on a different base URL
+    fetch(`${API_BASE_URL}/corpora`)
       .then((res) => res.json())
       .then((data: Corpus[]) => {
         // Sort by updated_at descending

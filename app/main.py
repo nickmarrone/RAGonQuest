@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from .database import engine, qdrant_client
@@ -8,6 +10,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI(title="RAGonQuest", description="RAG Application with Qdrant and SQLite")
+
+origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")     # For development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include routers
 app.include_router(corpus.router)
