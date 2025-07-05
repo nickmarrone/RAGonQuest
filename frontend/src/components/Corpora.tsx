@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
+import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
 import type { Corpus } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -8,6 +9,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
+  const [, setActiveConversation] = useAtom(activeConversationAtom);
+  const [, setConversationParts] = useAtom(conversationPartsAtom);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/corpora`)
@@ -21,6 +24,12 @@ const Corpora: React.FC = () => {
       });
   }, [setCorpora]);
 
+  const handleCorpusSelect = (corpus: Corpus) => {
+    setActiveCorpus(corpus);
+    setActiveConversation(null);
+    setConversationParts([]);
+  };
+
   return (
     <div>
       <h2 className="text-lg font-bold mb-4">Corpora</h2>
@@ -33,7 +42,7 @@ const Corpora: React.FC = () => {
                 ? "bg-blue-600 text-white"
                 : "bg-zinc-800 hover:bg-zinc-700"
             }`}
-            onClick={() => setActiveCorpus(corpus)}
+            onClick={() => handleCorpusSelect(corpus)}
           >
             <div className="font-semibold">{corpus.name}</div>
             <div className="text-xs text-zinc-400">{corpus.description}</div>
