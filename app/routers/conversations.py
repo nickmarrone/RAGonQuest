@@ -151,7 +151,8 @@ def create_conversation(
             query=conversation_data.query,
             openai_client=openai_client,
             qdrant_client=qdrant_client,
-            limit=conversation_data.limit
+            limit=conversation_data.limit,
+            similarity_threshold=conversation_data.similarity_threshold
         )
         
         # Create the conversation
@@ -253,7 +254,8 @@ def continue_conversation(
             qdrant_client=qdrant_client,
             collection_name=corpus.qdrant_collection_name,
             embedding_model=corpus.embedding_model,
-            limit=conversation_data.limit
+            limit=conversation_data.limit,
+            similarity_threshold=conversation_data.similarity_threshold
         )
         
         # Build conversation history for the AI

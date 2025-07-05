@@ -81,7 +81,8 @@ def search_qdrant(
     qdrant_client: QdrantClient, 
     collection_name: str,
     embedding_model: str = "text-embedding-3-small",
-    limit: int = 25
+    limit: int = 25,
+    similarity_threshold: float = 0.7
 ) -> List[str]:
     """
     Search Qdrant for relevant context chunks based on a query.
@@ -93,9 +94,10 @@ def search_qdrant(
         collection_name: Name of the Qdrant collection to search
         embedding_model: Model to use for creating embeddings
         limit: Maximum number of results to return
+        similarity_threshold: Minimum similarity score (0.0 to 1.0) for chunks to be included
         
     Returns:
-        List of text chunks from the search results
+        List of text chunks from the search results that meet the similarity threshold
     """
     # Create embedding for the query
     embedding = openai_client.embeddings.create(
@@ -108,10 +110,10 @@ def search_qdrant(
         collection_name=collection_name, 
         query_vector=embedding, 
         limit=limit, 
+        score_threshold=similarity_threshold,
         with_payload=True
     )
     
-    # Extract text from payload
     return [hit.payload["text"] for hit in hits]
 
 def query_corpus(
@@ -121,7 +123,8 @@ def query_corpus(
     qdrant_client: QdrantClient,
     limit: int = 25,
     embedding_model: Optional[str] = None,
-    completion_model: Optional[str] = None
+    completion_model: Optional[str] = None,
+    similarity_threshold: float = 0.7
 ) -> QueryResult:
     """
     Query a corpus using embeddings and return an AI-generated answer.
@@ -134,6 +137,7 @@ def query_corpus(
         limit: Maximum number of context chunks to retrieve
         embedding_model: Model to use for creating embeddings
         completion_model: Model to use for generating the answer
+        similarity_threshold: Minimum similarity score (0.0 to 1.0) for chunks to be included
         
     Returns:
         QueryResult with the answer and context information
@@ -154,7 +158,8 @@ def query_corpus(
             qdrant_client=qdrant_client,
             collection_name=corpus.qdrant_collection_name,
             embedding_model=embedding_model,
-            limit=limit
+            limit=limit,
+            similarity_threshold=similarity_threshold
         )
         
         if not context_chunks:
