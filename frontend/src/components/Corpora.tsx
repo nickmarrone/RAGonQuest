@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
-import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
+import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import type { Corpus } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -11,6 +11,7 @@ const Corpora: React.FC = () => {
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
   const [, setActiveConversation] = useAtom(activeConversationAtom);
   const [, setConversationParts] = useAtom(conversationPartsAtom);
+  const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/corpora`)
@@ -30,6 +31,7 @@ const Corpora: React.FC = () => {
       setActiveCorpus(corpus);
       setActiveConversation(null);
       setConversationParts([]);
+      setIsNewConversationMode(true); // Start new conversation mode
     }
   };
 

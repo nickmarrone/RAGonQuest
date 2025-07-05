@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useAtom } from "jotai";
-import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
+import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
+import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { ConversationPart } from "../types";
 
 interface ConversationViewProps {
@@ -10,6 +11,8 @@ interface ConversationViewProps {
 const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
   const [activeConversation] = useAtom(activeConversationAtom);
   const [conversationParts] = useAtom(conversationPartsAtom);
+  const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
+  const [activeCorpus] = useAtom(activeCorpusAtom);
 
   // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {
@@ -23,7 +26,25 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
     }
   }, [activeConversation, scrollContainerRef]);
 
-  if (!activeConversation) {
+  // Show new conversation welcome message
+  if (isNewConversationMode && !activeConversation) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4 text-zinc-400">New Conversation</h1>
+          <p className="text-zinc-500 mb-4">
+            You're starting a new conversation with the <span className="text-blue-400 font-semibold">{activeCorpus?.name}</span> corpus.
+          </p>
+          <p className="text-zinc-500">
+            Ask your first question below to begin the conversation.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show select conversation message when no conversation is selected and not in new mode
+  if (!activeConversation && !isNewConversationMode) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -38,10 +59,10 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
     <div className="h-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">
-          {activeConversation.title || "Untitled Conversation"}
+          {activeConversation?.title || "Untitled Conversation"}
         </h1>
         <p className="text-zinc-400 text-sm">
-          Created: {new Date(activeConversation.created_at).toLocaleString()}
+          Created: {activeConversation ? new Date(activeConversation.created_at).toLocaleString() : ""}
         </p>
       </div>
 

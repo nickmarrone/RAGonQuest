@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useAtom } from "jotai";
-import { conversationsAtom, activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
+import { conversationsAtom, activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
 
@@ -11,6 +11,7 @@ const ConversationsList: React.FC = () => {
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
+  const [isNewConversationMode, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
 
   const fetchConversations = async () => {
     if (!activeCorpus) {
@@ -57,6 +58,13 @@ const ConversationsList: React.FC = () => {
   const handleConversationSelect = async (conversation: Conversation) => {
     setActiveConversation(conversation);
     setConversationParts(conversation.parts);
+    setIsNewConversationMode(false); // Exit new conversation mode
+  };
+
+  const handleNewConversation = () => {
+    setActiveConversation(null);
+    setConversationParts([]);
+    setIsNewConversationMode(true);
   };
 
   if (!activeCorpus) {
@@ -65,7 +73,15 @@ const ConversationsList: React.FC = () => {
 
   return (
     <div className="mt-6">
-      <h3 className="text-md font-semibold mb-2">Conversations</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-md font-semibold">Conversations</h3>
+        <button
+          onClick={handleNewConversation}
+          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+        >
+          New
+        </button>
+      </div>
       <ul>
         {conversations.map((conv) => (
           <li

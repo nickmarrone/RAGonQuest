@@ -4,7 +4,8 @@ import {
   activeConversationAtom, 
   conversationPartsAtom, 
   isContinuingConversationAtom,
-  newQueryInputAtom 
+  newQueryInputAtom,
+  isNewConversationModeAtom
 } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 
@@ -12,10 +13,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
-  const [activeConversation] = useAtom(activeConversationAtom);
+  const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
   const [isContinuing, setIsContinuing] = useAtom(isContinuingConversationAtom);
   const [newQueryInput, setNewQueryInput] = useAtom(newQueryInputAtom);
+  const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +31,12 @@ const ConversationInput: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!inputValue.trim() || !activeConversation || !activeCorpus || isContinuing) {
+    if (!inputValue.trim() || !activeCorpus || isContinuing) {
+      return;
+    }
+
+    // For existing conversations, we need an active conversation
+    if (!isNewConversationMode && !activeConversation) {
       return;
     }
 
@@ -38,19 +45,40 @@ const ConversationInput: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations/${activeConversation.id}/continue`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: inputValue.trim(),
-            limit: 25,
-          }),
-        }
-      );
+      let response;
+      
+      if (isNewConversationMode) {
+        // Create a new conversation
+        response = await fetch(
+          `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: inputValue.trim(),
+              title: inputValue.trim().substring(0, 100), // Use first 100 chars as title
+              limit: 25,
+            }),
+          }
+        );
+      } else {
+        // Continue existing conversation
+        response = await fetch(
+          `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: inputValue.trim(),
+              limit: 25,
+            }),
+          }
+        );
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -59,14 +87,15 @@ const ConversationInput: React.FC = () => {
 
       const updatedConversation = await response.json();
       
-      // Update the conversation parts with the new data
+      // Update the conversation and parts
+      setActiveConversation(updatedConversation);
       setConversationParts(updatedConversation.parts);
       
       // Clear the input
       setInputValue("");
       
     } catch (error) {
-      console.error("Error continuing conversation:", error);
+      console.error("Error processing conversation:", error);
       setError(error instanceof Error ? error.message : "An error occurred while processing your question");
     } finally {
       setIsContinuing(false);
@@ -81,7 +110,8 @@ const ConversationInput: React.FC = () => {
     }
   };
 
-  if (!activeConversation) {
+  // Show input if we have an active conversation OR if we're in new conversation mode with a corpus selected
+  if (!activeConversation && !isNewConversationMode) {
     return null;
   }
 
@@ -94,7 +124,7 @@ const ConversationInput: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a follow-up question..."
+              placeholder={isNewConversationMode ? "Ask your first question..." : "Ask a follow-up question..."}
               disabled={isContinuing}
               className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               rows={2}
