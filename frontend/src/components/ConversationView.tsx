@@ -11,34 +11,17 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   const [activeConversation] = useAtom(activeConversationAtom);
   const [conversationParts] = useAtom(conversationPartsAtom);
 
-  // Scroll to bottom when conversation or parts change
+  // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {
-    if (scrollContainerRef.current && conversationParts.length > 0) {
-      // Try multiple approaches to ensure scrolling works
-      const scrollToBottom = () => {
+    if (scrollContainerRef.current && activeConversation) {
+      // Add a small delay to ensure content is rendered
+      setTimeout(() => {
         if (scrollContainerRef.current) {
-          const container = scrollContainerRef.current;
-          // Method 1: Direct scrollTop assignment
-          container.scrollTop = container.scrollHeight;
-          // Method 2: Smooth scroll as fallback
-          setTimeout(() => {
-            if (container.scrollTop !== container.scrollHeight) {
-              container.scrollTo({
-                top: container.scrollHeight,
-                behavior: 'smooth'
-              });
-            }
-          }, 50);
+          scrollContainerRef.current.scrollTop = 0;
         }
-      };
-      // Try immediate scroll
-      scrollToBottom();
-      // Try delayed scroll to ensure content is rendered
-      setTimeout(scrollToBottom, 100);
-      // Try another delayed scroll as backup
-      setTimeout(scrollToBottom, 300);
+      }, 50);
     }
-  }, [activeConversation, conversationParts, scrollContainerRef]);
+  }, [activeConversation, scrollContainerRef]);
 
   if (!activeConversation) {
     return (
@@ -143,4 +126,4 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   );
 };
 
-export default ConversationView; 
+export default ConversationView;

@@ -10,25 +10,49 @@ const ConversationsList: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
-  const [, setConversationParts] = useAtom(conversationPartsAtom);
+  const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
 
-  useEffect(() => {
+  const fetchConversations = async () => {
     if (!activeCorpus) {
       setConversations([]);
       setActiveConversation(null);
       setConversationParts([]);
       return;
     }
-    fetch(`${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`)
-      .then((res) => res.json())
-      .then((data: Conversation[]) => {
-        // Sort by created_at descending
-        const sorted = [...data].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        setConversations(sorted);
-      });
-  }, [activeCorpus, setConversations, setActiveConversation, setConversationParts]);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`);
+      const data: Conversation[] = await response.json();
+      
+      // Sort by created_at descending
+      const sorted = [...data].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setConversations(sorted);
+      
+      // Update active conversation if it exists
+      if (activeConversation) {
+        const updatedActive = sorted.find(conv => conv.id === activeConversation.id);
+        if (updatedActive) {
+          setActiveConversation(updatedActive);
+          setConversationParts(updatedActive.parts);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchConversations();
+  }, [activeCorpus]);
+
+  // Refresh conversations when conversation parts change (indicating a new part was added)
+  useEffect(() => {
+    if (conversationParts.length > 0) {
+      fetchConversations();
+    }
+  }, [conversationParts.length]);
 
   const handleConversationSelect = async (conversation: Conversation) => {
     setActiveConversation(conversation);
@@ -56,6 +80,9 @@ const ConversationsList: React.FC = () => {
             <div className="font-medium">{conv.title || "Untitled"}</div>
             <div className="text-xs text-zinc-400">
               {new Date(conv.created_at).toLocaleString()}
+            </div>
+            <div className="text-xs text-zinc-500">
+              {conv.parts?.length || 0} parts
             </div>
           </li>
         ))}
