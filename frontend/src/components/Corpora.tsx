@@ -26,6 +26,7 @@ const Corpora: React.FC = () => {
   const [costDialogLoading, setCostDialogLoading] = useState(false);
   const [costDialogError, setCostDialogError] = useState<string | null>(null);
   const [costDialogData, setCostDialogData] = useState<CostEstimateData | undefined>(undefined);
+  const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -166,6 +167,27 @@ const Corpora: React.FC = () => {
     }
   };
 
+  const handleIngestCorpus = async (corpus: Corpus) => {
+    setIngestingCorpusId(corpus.id);
+    setError(null);
+    try {
+      const response = await fetch(`/corpora/${corpus.id}/ingest`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to ingest corpus files');
+      }
+      fetchCorpora();
+      showToast('Ingestion complete!');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIngestingCorpusId(null);
+      setOpenDropdown(null);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -218,7 +240,7 @@ const Corpora: React.FC = () => {
                 <span style={{ fontSize: '1em', display: 'block', lineHeight: 1 }}>▼</span>
               </button>
               {openDropdown === corpus.id && (
-                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[160px]">
+                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[180px]">
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -250,6 +272,19 @@ const Corpora: React.FC = () => {
                     className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
                   >
                     Estimate Cost
+                  </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleIngestCorpus(corpus);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors flex items-center"
+                    disabled={ingestingCorpusId === corpus.id}
+                  >
+                    {ingestingCorpusId === corpus.id ? (
+                      <span className="animate-spin mr-2">⏳</span>
+                    ) : null}
+                    Ingest Files
                   </button>
                 </div>
               )}
