@@ -19,7 +19,7 @@ const ContextChunksDialog: React.FC<{
     <Dialog
       isOpen={isOpen}
       onCancel={onClose}
-      title="Context Chunks"
+      title="Context"
       maxWidth="max-w-4xl"
       showCancelButton={true}
       cancelButtonLabel="Close"
@@ -114,7 +114,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
                     <div className="flex justify-end mt-2">
                       <div
                         className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-600 transition-colors shadow cursor-pointer"
-                        title="Show context chunks"
+                        title="Show context"
                         onClick={() => setOpenChunksPartId(part.id)}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
