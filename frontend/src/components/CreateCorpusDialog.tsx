@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Dialog from "./Dialog";
 
 interface CreateCorpusDialogProps {
   isOpen: boolean;
@@ -53,8 +54,6 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
     }
   }, [isOpen, mode, initialData]);
 
-  if (!isOpen) return null;
-
   const validateForm = (): boolean => {
     const newErrors: Partial<CorpusFormData> = {};
 
@@ -94,19 +93,21 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">{mode === 'create' ? 'Create New Corpus' : 'Edit Corpus'}</h2>
-          <button
-            onClick={onClose}
-            className="text-zinc-400 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Dialog
+      isOpen={isOpen}
+      onCancel={onClose}
+      onCommit={() => {
+        if (validateForm()) {
+          onSave(formData);
+        }
+      }}
+      title={mode === 'create' ? 'Create New Corpus' : 'Edit Corpus'}
+      commitButtonLabel={isLoading ? (mode === 'create' ? "Creating..." : "Updating...") : (mode === 'create' ? "Create Corpus" : "Update Corpus")}
+      commitButtonVariant="primary"
+      commitButtonDisabled={isLoading}
+      commitButtonLoading={isLoading}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">
               Name *
@@ -243,27 +244,9 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
               Minimum similarity score (0.0 to 1.0) for vector search results. Higher values mean more relevant results but fewer matches.
             </p>
           </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white rounded transition-colors"
-            >
-              {isLoading ? (mode === 'create' ? "Creating..." : "Updating...") : (mode === 'create' ? "Create Corpus" : "Update Corpus")}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
-  );
-};
+      </Dialog>
+    );
+  };
 
 export default CreateCorpusDialog; 
