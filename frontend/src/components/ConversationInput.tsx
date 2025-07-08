@@ -112,7 +112,7 @@ const ConversationInput: React.FC = () => {
   return (
     <div className="border-t border-zinc-700 bg-zinc-800 p-4">
       <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
-        <div className="flex items-end space-x-3">
+        <div className="flex items-center space-x-3">
           <div className="flex-1">
             <textarea
               value={inputValue}

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAtom } from "jotai";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
@@ -8,11 +8,51 @@ interface ConversationViewProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
+// Dialog for showing context chunks
+const ContextChunksDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  chunks: string[];
+}> = ({ isOpen, onClose, chunks }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Context Chunks</h2>
+          <button
+            onClick={onClose}
+            className="text-zinc-400 hover:text-white transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="space-y-4">
+          {chunks.map((chunk, idx) => (
+            <div key={idx} className="bg-zinc-800 rounded p-3 text-zinc-200 text-sm whitespace-pre-wrap">
+              {chunk}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
   const [activeConversation] = useAtom(activeConversationAtom);
   const [conversationParts] = useAtom(conversationPartsAtom);
   const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
   const [activeCorpus] = useAtom(activeCorpusAtom);
+  const [openChunksPartId, setOpenChunksPartId] = useState<string | null>(null);
 
   // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {
@@ -66,76 +106,51 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
         </p>
       </div>
 
-      <div className="space-y-6">
-        {conversationParts.map((part: ConversationPart) => (
-          <div key={part.id} className="bg-zinc-800 rounded-lg p-6">
-            {/* User Query */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-blue-400">User Query:</h3>
-              <div className="bg-zinc-700 rounded p-3">
-                <p className="text-white">{part.query}</p>
-              </div>
-            </div>
-
-            {/* AI Response */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2 text-green-400">AI Response:</h3>
-              <div className="bg-zinc-700 rounded p-3">
-                <p className="text-white whitespace-pre-wrap">{part.response}</p>
-              </div>
-            </div>
-
-            {/* Context Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-zinc-400">Chunks Retrieved: </span>
-                <span className="text-white">{part.chunks_retrieved}</span>
-              </div>
-              <div>
-                <span className="text-zinc-400">Embedding Model: </span>
-                <span className="text-white">{part.embedding_model_used}</span>
-              </div>
-              <div>
-                <span className="text-zinc-400">Completion Model: </span>
-                <span className="text-white">{part.completion_model_used}</span>
-              </div>
-              <div>
-                <span className="text-zinc-400">Created: </span>
-                <span className="text-white">
-                  {new Date(part.created_at).toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            {/* Sources */}
-            {part.sources && part.sources.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-md font-semibold mb-2 text-yellow-400">Sources:</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  {part.sources.map((source, index) => (
-                    <li key={index} className="text-zinc-300 text-sm">{source}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Context Chunks (collapsible) */}
-            {part.context_chunks && part.context_chunks.length > 0 && (
-              <details className="mt-4">
-                <summary className="text-md font-semibold mb-2 text-purple-400 cursor-pointer hover:text-purple-300">
-                  Context Chunks ({part.context_chunks.length})
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {part.context_chunks.map((chunk, index) => (
-                    <div key={index} className="bg-zinc-700 rounded p-2 text-sm">
-                      <p className="text-zinc-300">{chunk}</p>
-                    </div>
-                  ))}
+      <div className="flex justify-center w-full">
+        <div className="space-y-10 w-full max-w-4xl mx-auto">
+          {conversationParts.map((part: ConversationPart) => (
+            <div key={part.id} className="flex flex-col gap-8 py-2">
+              {/* User Query Bubble (right aligned) */}
+              <div className="flex justify-end">
+                <div className="bg-blue-600 text-white rounded-2xl px-6 py-4 max-w-3xl w-full ml-auto shadow-md flex flex-col">
+                  <div>{part.query}</div>
+                  <div className="flex justify-end mt-2">
+                    <span className="text-xs text-zinc-200 pr-2">
+                      {new Date(part.created_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-              </details>
-            )}
-          </div>
-        ))}
+              </div>
+              {/* AI Response (left aligned) */}
+              <div className="flex flex-col items-start">
+                <div className="bg-zinc-700 text-white rounded-2xl px-6 py-4 max-w-3xl w-full mr-auto shadow whitespace-pre-wrap flex flex-col">
+                  <div>{part.response}</div>
+                  {part.context_chunks && part.context_chunks.length > 0 && (
+                    <div className="flex justify-end mt-2">
+                      <div
+                        className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-600 transition-colors shadow cursor-pointer"
+                        title="Show context chunks"
+                        onClick={() => setOpenChunksPartId(part.id)}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h10M7 11h10M7 15h6M5 5v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Context Chunks Dialog */}
+                {part.context_chunks && part.context_chunks.length > 0 && (
+                  <ContextChunksDialog
+                    isOpen={openChunksPartId === part.id}
+                    onClose={() => setOpenChunksPartId(null)}
+                    chunks={part.context_chunks}
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {conversationParts.length === 0 && (
