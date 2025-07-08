@@ -30,7 +30,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   if (isNewConversationMode && !activeConversation) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-lg">
           <h1 className="text-2xl font-bold mb-4 text-zinc-400">New Conversation</h1>
           <p className="text-zinc-500 mb-4">
             You're starting a new conversation with the <span className="text-blue-400 font-semibold">{activeCorpus?.name}</span> corpus.

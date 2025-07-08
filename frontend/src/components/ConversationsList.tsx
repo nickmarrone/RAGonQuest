@@ -115,16 +115,16 @@ const ConversationsList: React.FC = () => {
 
   const renderConversationItem = (conv: Conversation) => (
     <div
-      className={`p-2 rounded mb-2 relative transition-colors ${
+      className={`p-2 rounded mb-2 relative transition-colors cursor-pointer ${
         activeConversation?.id === conv.id 
           ? 'bg-blue-600 hover:bg-blue-700' 
           : 'bg-zinc-800 hover:bg-zinc-700'
       }`}
+      onClick={() => handleConversationSelect(conv)}
     >
       <div className="flex items-center justify-between">
         <div 
-          className="text-sm font-medium cursor-pointer flex-1 min-w-0" 
-          onClick={() => handleConversationSelect(conv)}
+          className="text-sm font-medium flex-1 min-w-0" 
         >
           {conv.title || "Untitled"}
         </div>

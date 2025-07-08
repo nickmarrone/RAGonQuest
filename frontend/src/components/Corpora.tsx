@@ -232,14 +232,15 @@ const Corpora: React.FC = () => {
 
   const renderCorpusItem = (corpus: Corpus) => (
     <div
-      className={`p-2 rounded mb-2 relative ${
+      className={`p-2 rounded mb-2 relative cursor-pointer ${
         activeCorpus?.id === corpus.id
           ? "bg-blue-600 text-white"
           : "bg-zinc-800 hover:bg-zinc-700"
       }`}
+      onClick={() => handleCorpusSelect(corpus)}
     >
       <div className="flex items-center justify-between">
-        <div className="font-semibold truncate cursor-pointer flex-1 min-w-0" onClick={() => handleCorpusSelect(corpus)}>
+        <div className="font-semibold truncate flex-1 min-w-0">
           {corpus.name}
         </div>
         <DropdownMenu
