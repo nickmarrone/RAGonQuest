@@ -21,6 +21,7 @@ class CorpusBase(BaseModel):
     path: str = Field(..., min_length=1, max_length=500, description="Path to the corpus directory")
     embedding_model: str = Field(default="text-embedding-3-small", min_length=1, max_length=100, description="OpenAI embedding model to use")
     completion_model: str = Field(default="gpt-4o-mini", min_length=1, max_length=100, description="OpenAI completion model to use")
+    similarity_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Similarity threshold for vector search (0.0 to 1.0)")
     
     @field_validator('path')
     @classmethod
@@ -39,6 +40,7 @@ class CorpusUpdate(BaseModel):
     path: Optional[str] = Field(None, min_length=1, max_length=500, description="Path to the corpus directory")
     embedding_model: Optional[str] = Field(None, min_length=1, max_length=100, description="OpenAI embedding model to use")
     completion_model: Optional[str] = Field(None, min_length=1, max_length=100, description="OpenAI completion model to use")
+    similarity_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="Similarity threshold for vector search (0.0 to 1.0)")
     
     @field_validator('path')
     @classmethod
@@ -101,12 +103,10 @@ class ConversationBase(BaseModel):
 class ConversationCreate(ConversationBase):
     query: str = Field(..., min_length=1, description="User's query/question")
     limit: int = Field(default=25, ge=1, le=100, description="Maximum number of context chunks to retrieve")
-    similarity_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum similarity score (0.0 to 1.0) for chunks to be included")
 
 class ConversationContinue(BaseModel):
     query: str = Field(..., min_length=1, description="User's new query/question")
     limit: int = Field(default=25, ge=1, le=100, description="Maximum number of context chunks to retrieve")
-    similarity_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum similarity score (0.0 to 1.0) for chunks to be included")
 
 class ConversationResponse(ConversationBase):
     id: str = Field(..., description="Conversation ID")

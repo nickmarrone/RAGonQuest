@@ -311,6 +311,7 @@ const Corpora: React.FC = () => {
           path: editingCorpus.path,
           embedding_model: editingCorpus.embedding_model,
           completion_model: editingCorpus.completion_model,
+          similarity_threshold: editingCorpus.similarity_threshold,
         } : undefined}
       />
 
