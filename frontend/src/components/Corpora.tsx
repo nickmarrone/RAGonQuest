@@ -18,6 +18,13 @@ const Corpora: React.FC = () => {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [editingCorpus, setEditingCorpus] = useState<Corpus | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const fetchCorpora = () => {
     fetch(`/corpora`)
@@ -111,6 +118,27 @@ const Corpora: React.FC = () => {
     }
   };
 
+  const handleScanCorpus = async (corpus: Corpus) => {
+    setScanningCorpusId(corpus.id);
+    setError(null);
+    try {
+      const response = await fetch(`/corpora/${corpus.id}/scan`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to scan corpus');
+      }
+      fetchCorpora();
+      showToast('Scan complete!');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setScanningCorpusId(null);
+      setOpenDropdown(null);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -163,7 +191,7 @@ const Corpora: React.FC = () => {
                 <span style={{ fontSize: '1em', display: 'block', lineHeight: 1 }}>▼</span>
               </button>
               {openDropdown === corpus.id && (
-                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[120px]">
+                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[140px]">
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -173,6 +201,19 @@ const Corpora: React.FC = () => {
                     className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
                   >
                     Edit
+                  </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleScanCorpus(corpus);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors flex items-center"
+                    disabled={scanningCorpusId === corpus.id}
+                  >
+                    {scanningCorpusId === corpus.id ? (
+                      <span className="animate-spin mr-2">⏳</span>
+                    ) : null}
+                    Scan for Files
                   </button>
                 </div>
               )}
@@ -201,6 +242,14 @@ const Corpora: React.FC = () => {
           completion_model: editingCorpus.completion_model,
         } : undefined}
       />
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed top-8 right-8 bg-green-600 border border-green-700 text-white px-6 py-3 rounded shadow-lg z-50 flex items-center space-x-2 animate-fade-in">
+          <span>{toast}</span>
+          <span className="ml-2 text-base select-none">×</span>
+        </div>
+      )}
     </div>
   );
 };
