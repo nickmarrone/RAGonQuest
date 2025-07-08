@@ -16,6 +16,7 @@ export interface Corpus {
   path: string;
   embedding_model: string;
   completion_model: string;
+  similarity_threshold: number;
   created_at: string;
   updated_at: string;
   files: CorpusFile[];

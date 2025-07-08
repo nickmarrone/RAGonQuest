@@ -151,8 +151,7 @@ def create_conversation(
             query=conversation_data.query,
             openai_client=openai_client,
             qdrant_client=qdrant_client,
-            limit=conversation_data.limit,
-            similarity_threshold=conversation_data.similarity_threshold
+            limit=conversation_data.limit
         )
         
         # Create the conversation
@@ -247,7 +246,7 @@ def continue_conversation(
     qdrant_client = QdrantClient(url=qdrant_url)
     
     try:
-        # Get new context chunks for the current query
+        # Get new context chunks for the current query using corpus similarity threshold
         new_context_chunks = search_qdrant(
             query=conversation_data.query,
             openai_client=openai_client,
@@ -255,7 +254,7 @@ def continue_conversation(
             collection_name=corpus.qdrant_collection_name,
             embedding_model=corpus.embedding_model,
             limit=conversation_data.limit,
-            similarity_threshold=conversation_data.similarity_threshold
+            similarity_threshold=corpus.similarity_threshold
         )
         
         # Build conversation history for the AI

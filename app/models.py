@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, Boolean, ForeignKey, JSON, Integer
+from sqlalchemy import Column, String, DateTime, Text, Boolean, ForeignKey, JSON, Integer, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
@@ -19,6 +19,7 @@ class Corpus(Base):
     path = Column(String(500), nullable=False)  # Path to the corpus directory
     embedding_model = Column(String(100), nullable=False, default="text-embedding-3-small")  # OpenAI embedding model
     completion_model = Column(String(100), nullable=False, default="gpt-4o-mini")  # OpenAI completion model
+    similarity_threshold = Column(Float, nullable=False, default=0.7)  # Similarity threshold for vector search
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
     

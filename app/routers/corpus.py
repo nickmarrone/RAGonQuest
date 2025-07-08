@@ -39,7 +39,10 @@ def create_corpus(corpus: CorpusCreate, db: Session = Depends(get_db)):
         description=corpus.description,
         default_prompt=corpus.default_prompt,
         qdrant_collection_name=corpus.qdrant_collection_name,
-        path=corpus.path
+        path=corpus.path,
+        embedding_model=corpus.embedding_model,
+        completion_model=corpus.completion_model,
+        similarity_threshold=corpus.similarity_threshold
     )
     
     try:

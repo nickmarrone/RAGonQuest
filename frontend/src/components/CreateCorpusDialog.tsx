@@ -17,6 +17,7 @@ export interface CorpusFormData {
   path: string;
   embedding_model: string;
   completion_model: string;
+  similarity_threshold: number;
 }
 
 const initialFormData: CorpusFormData = {
@@ -27,6 +28,7 @@ const initialFormData: CorpusFormData = {
   path: "",
   embedding_model: "text-embedding-3-small",
   completion_model: "gpt-4o-mini",
+  similarity_threshold: 0.7,
 };
 
 const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
@@ -83,7 +85,7 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof CorpusFormData, value: string) => {
+  const handleInputChange = (field: keyof CorpusFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -221,6 +223,25 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
                 <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Similarity Threshold
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min="0.0"
+              max="1.0"
+              value={formData.similarity_threshold}
+              onChange={(e) => handleInputChange("similarity_threshold", parseFloat(e.target.value) || 0.7)}
+              className="w-full p-2 bg-zinc-800 border border-zinc-600 rounded focus:border-blue-500 focus:outline-none"
+              placeholder="0.7"
+            />
+            <p className="text-zinc-400 text-sm mt-1">
+              Minimum similarity score (0.0 to 1.0) for vector search results. Higher values mean more relevant results but fewer matches.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

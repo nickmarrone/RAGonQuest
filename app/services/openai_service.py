@@ -123,8 +123,7 @@ def query_corpus(
     qdrant_client: QdrantClient,
     limit: int = 25,
     embedding_model: Optional[str] = None,
-    completion_model: Optional[str] = None,
-    similarity_threshold: float = 0.7
+    completion_model: Optional[str] = None
 ) -> QueryResult:
     """
     Query a corpus using embeddings and return an AI-generated answer.
@@ -151,7 +150,7 @@ def query_corpus(
         embedding_model = embedding_model or corpus.embedding_model
         completion_model = completion_model or corpus.completion_model
         
-        # Search for relevant context chunks
+        # Search for relevant context chunks using corpus similarity threshold
         context_chunks = search_qdrant(
             query=query,
             openai_client=openai_client,
@@ -159,7 +158,7 @@ def query_corpus(
             collection_name=corpus.qdrant_collection_name,
             embedding_model=embedding_model,
             limit=limit,
-            similarity_threshold=similarity_threshold
+            similarity_threshold=corpus.similarity_threshold
         )
         
         if not context_chunks:
