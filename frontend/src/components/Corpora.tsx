@@ -7,6 +7,9 @@ import CreateCorpusDialog from "./CreateCorpusDialog";
 import type { CorpusFormData } from "./CreateCorpusDialog";
 import EstimateCostDialog from "./EstimateCostDialog";
 import type { CostEstimateData } from "./EstimateCostDialog";
+import DeleteCorpusDialog from "./DeleteCorpusDialog";
+import DropdownMenu from "./DropdownMenu";
+import ListContainer from "./ListContainer";
 
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
@@ -27,6 +30,9 @@ const Corpora: React.FC = () => {
   const [costDialogError, setCostDialogError] = useState<string | null>(null);
   const [costDialogData, setCostDialogData] = useState<CostEstimateData | undefined>(undefined);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingCorpus, setDeletingCorpus] = useState<Corpus | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -49,17 +55,7 @@ const Corpora: React.FC = () => {
     fetchCorpora();
   }, [setCorpora]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenDropdown(null);
-    };
 
-    if (openDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [openDropdown]);
 
   const handleCorpusSelect = (corpus: Corpus) => {
     // Only clear conversations if the corpus actually changes
@@ -188,19 +184,130 @@ const Corpora: React.FC = () => {
     }
   };
 
+  const handleDeleteCorpus = (corpus: Corpus) => {
+    setDeletingCorpus(corpus);
+    setDeleteDialogOpen(true);
+    setOpenDropdown(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingCorpus) return;
+    
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/corpora/${deletingCorpus.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete corpus');
+      }
+      
+      // Close dialog and refresh corpora list
+      setDeleteDialogOpen(false);
+      setDeletingCorpus(null);
+      fetchCorpora();
+      
+      // Clear active corpus if it was the one being deleted
+      if (activeCorpus?.id === deletingCorpus.id) {
+        setActiveCorpus(null);
+        setActiveConversation(null);
+        setConversationParts([]);
+        setIsNewConversationMode(true);
+      }
+      
+      showToast('Corpus deleted successfully!');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setDeletingCorpus(null);
+  };
+
+  const renderCorpusItem = (corpus: Corpus) => (
+    <div
+      className={`p-2 rounded mb-2 relative cursor-pointer ${
+        activeCorpus?.id === corpus.id
+          ? "bg-blue-600 text-white"
+          : "bg-zinc-800 hover:bg-zinc-700"
+      }`}
+      onClick={() => handleCorpusSelect(corpus)}
+    >
+      <div className="flex items-center justify-between">
+        <div className="font-semibold truncate flex-1 min-w-0">
+          {corpus.name}
+        </div>
+        <DropdownMenu
+          isOpen={openDropdown === corpus.id}
+          onToggle={e => {
+            e.stopPropagation();
+            setOpenDropdown(openDropdown === corpus.id ? null : corpus.id);
+          }}
+          items={[
+            {
+              label: "Edit",
+              onClick: e => {
+                e.stopPropagation();
+                handleEditCorpus(corpus);
+                setOpenDropdown(null);
+              }
+            },
+            {
+              label: "Scan for Files",
+              onClick: e => {
+                e.stopPropagation();
+                handleScanCorpus(corpus);
+              },
+              loading: scanningCorpusId === corpus.id,
+              disabled: scanningCorpusId === corpus.id
+            },
+            {
+              label: "Estimate Cost",
+              onClick: e => {
+                e.stopPropagation();
+                handleEstimateCost(corpus);
+              }
+            },
+            {
+              label: "Ingest Files",
+              onClick: e => {
+                e.stopPropagation();
+                handleIngestCorpus(corpus);
+              },
+              loading: ingestingCorpusId === corpus.id,
+              disabled: ingestingCorpusId === corpus.id
+            },
+            {
+              label: "Delete",
+              onClick: e => {
+                e.stopPropagation();
+                handleDeleteCorpus(corpus);
+              },
+              variant: 'danger'
+            }
+          ]}
+          menuClassName="min-w-[180px]"
+        />
+      </div>
+      <div className={`text-xs whitespace-pre-line break-words mt-1 ${
+        activeCorpus?.id === corpus.id ? "text-blue-100" : "text-zinc-400"
+      }`}>{corpus.description}</div>
+      <div className={`text-xs ${
+        activeCorpus?.id === corpus.id ? "text-blue-200" : "text-zinc-500"
+      }`}>
+        {new Date(corpus.updated_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+      </div>
+    </div>
+  );
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-bold mb-4">Corpora</h2>
-        <button
-            onClick={handleNewCorpus}
-            disabled={isCreating}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white text-xs rounded transition-colors"
-          >
-          {isCreating ? (dialogMode === 'create' ? "Creating..." : "Updating...") : "New"}
-        </button>
-      </div>
-      
       {error && (
         <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded text-red-200">
           <div className="flex items-center justify-between">
@@ -215,87 +322,16 @@ const Corpora: React.FC = () => {
         </div>
       )}
       
-      <ul>
-        {corpora.map((corpus: Corpus) => (
-          <li
-            key={corpus.id}
-            className={`p-2 rounded mb-2 relative ${
-              activeCorpus?.id === corpus.id
-                ? "bg-blue-600 text-white"
-                : "bg-zinc-800 hover:bg-zinc-700"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="font-semibold truncate cursor-pointer flex-1 min-w-0" onClick={() => handleCorpusSelect(corpus)}>
-                {corpus.name}
-              </div>
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  setOpenDropdown(openDropdown === corpus.id ? null : corpus.id);
-                }}
-                className="ml-2 p-0.5 text-xs text-zinc-400 hover:text-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ lineHeight: 1, height: '1.5em', width: '1.5em', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <span style={{ fontSize: '1em', display: 'block', lineHeight: 1 }}>▼</span>
-              </button>
-              {openDropdown === corpus.id && (
-                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[180px]">
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleEditCorpus(corpus);
-                      setOpenDropdown(null);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleScanCorpus(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors flex items-center"
-                    disabled={scanningCorpusId === corpus.id}
-                  >
-                    {scanningCorpusId === corpus.id ? (
-                      <span className="animate-spin mr-2">⏳</span>
-                    ) : null}
-                    Scan for Files
-                  </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleEstimateCost(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
-                  >
-                    Estimate Cost
-                  </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleIngestCorpus(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors flex items-center"
-                    disabled={ingestingCorpusId === corpus.id}
-                  >
-                    {ingestingCorpusId === corpus.id ? (
-                      <span className="animate-spin mr-2">⏳</span>
-                    ) : null}
-                    Ingest Files
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="text-xs text-zinc-400 whitespace-pre-line break-words mt-1">{corpus.description}</div>
-            <div className="text-xs text-zinc-500">
-              Updated: {new Date(corpus.updated_at).toLocaleString()}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <ListContainer
+        title="Corpora"
+        items={corpora}
+        renderItem={renderCorpusItem}
+        getItemKey={(corpus) => corpus.id}
+        onNewClick={handleNewCorpus}
+        newButtonDisabled={isCreating}
+        newButtonLoading={isCreating}
+        newButtonText={isCreating ? (dialogMode === 'create' ? "Creating..." : "Updating...") : "New"}
+      />
 
       <CreateCorpusDialog
         isOpen={isDialogOpen}
@@ -321,6 +357,14 @@ const Corpora: React.FC = () => {
         costData={costDialogData}
         loading={costDialogLoading}
         error={costDialogError}
+      />
+
+      <DeleteCorpusDialog
+        isOpen={deleteDialogOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        corpus={deletingCorpus}
+        isLoading={isDeleting}
       />
 
       {/* Toast notification */}
