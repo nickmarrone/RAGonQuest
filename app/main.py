@@ -70,19 +70,17 @@ async def health_check():
     else:
         return JSONResponse(content=health_status, status_code=503)
 
-# Catch-all route for client-side routing - must be last
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str, request: Request):
-    """Catch-all route for client-side routing."""
-    # Don't interfere with API routes
-    if full_path.startswith(("corpora", "health", "docs", "openapi.json", "static")):
-        raise HTTPException(status_code=404, detail="Not found")
-    
-    # Serve the frontend for all other routes
-    if os.path.exists("static/index.html"):
+# Catch-all route for client-side routing - only in production when static files exist
+if os.path.exists("static/index.html"):
+    @app.get("/{full_path:path}")
+    async def catch_all(full_path: str, request: Request):
+        """Catch-all route for client-side routing."""
+        # Don't interfere with API routes
+        if full_path.startswith(("corpora", "health", "docs", "openapi.json", "static")):
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Serve the frontend for all other routes
         return FileResponse("static/index.html")
-    else:
-        raise HTTPException(status_code=404, detail="Not found")
 
 if __name__ == "__main__":
     import uvicorn
