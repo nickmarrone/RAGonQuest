@@ -4,14 +4,12 @@ import { conversationsAtom, activeConversationAtom, conversationPartsAtom, isNew
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const ConversationsList: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
-  const [isNewConversationMode, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
+  const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
 
   const fetchConversations = async () => {
     if (!activeCorpus) {
@@ -22,7 +20,7 @@ const ConversationsList: React.FC = () => {
     }
     
     try {
-      const response = await fetch(`${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`);
+      const response = await fetch(`/corpora/${activeCorpus.id}/conversations`);
       const data: Conversation[] = await response.json();
       
       // Sort by created_at descending

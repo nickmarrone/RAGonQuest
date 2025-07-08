@@ -4,19 +4,15 @@ import {
   activeConversationAtom, 
   conversationPartsAtom, 
   isContinuingConversationAtom,
-  newQueryInputAtom,
   isNewConversationModeAtom
 } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
-  const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
+  const [, setConversationParts] = useAtom(conversationPartsAtom);
   const [isContinuing, setIsContinuing] = useAtom(isContinuingConversationAtom);
-  const [newQueryInput, setNewQueryInput] = useAtom(newQueryInputAtom);
   const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +37,6 @@ const ConversationInput: React.FC = () => {
     }
 
     setIsContinuing(true);
-    setNewQueryInput(inputValue);
     setError(null);
 
     try {
@@ -50,7 +45,7 @@ const ConversationInput: React.FC = () => {
       if (isNewConversationMode) {
         // Create a new conversation
         response = await fetch(
-          `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations`,
+          `/corpora/${activeCorpus.id}/conversations`,
           {
             method: "POST",
             headers: {
@@ -66,7 +61,7 @@ const ConversationInput: React.FC = () => {
       } else {
         // Continue existing conversation
         response = await fetch(
-          `${API_BASE_URL}/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`,
+          `/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`,
           {
             method: "POST",
             headers: {
@@ -99,7 +94,6 @@ const ConversationInput: React.FC = () => {
       setError(error instanceof Error ? error.message : "An error occurred while processing your question");
     } finally {
       setIsContinuing(false);
-      setNewQueryInput("");
     }
   };
 
