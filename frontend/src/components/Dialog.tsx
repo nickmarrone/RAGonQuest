@@ -71,10 +71,10 @@ const Dialog: React.FC<DialogProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-      <div className={`bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full ${maxWidth} ${maxHeight} overflow-y-auto shadow-2xl pointer-events-auto`}>
-        {/* Header */}
+      <div className={`bg-zinc-900 border border-zinc-700 rounded-lg w-full ${maxWidth} ${maxHeight} flex flex-col shadow-2xl pointer-events-auto`}>
+        {/* Header - Fixed */}
         {(title || true) && (
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
             {title && <h2 className="text-xl font-bold">{title}</h2>}
             <button
               onClick={onCancel}
@@ -85,14 +85,16 @@ const Dialog: React.FC<DialogProps> = ({
           </div>
         )}
 
-        {/* Body */}
-        <div className="space-y-4">
-          {children}
+        {/* Body - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="space-y-4">
+            {children}
+          </div>
         </div>
 
-        {/* Footer with buttons */}
+        {/* Footer with buttons - Fixed */}
         {(buttons && buttons.length > 0) || onCommit || showCancelButton ? (
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 p-6 pt-4 flex-shrink-0">
             {/* Custom buttons */}
             {buttons && buttons.map((button, index) => (
               <button
