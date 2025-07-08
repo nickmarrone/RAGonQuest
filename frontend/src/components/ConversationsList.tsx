@@ -4,6 +4,7 @@ import { conversationsAtom, activeConversationAtom, conversationPartsAtom, isNew
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
 import DropdownMenu from "./DropdownMenu";
+import ListContainer from "./ListContainer";
 
 const ConversationsList: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
@@ -112,67 +113,63 @@ const ConversationsList: React.FC = () => {
     return <div className="mt-6 text-zinc-400">Select a corpus to see conversations.</div>;
   }
 
-  return (
-    <div className="mt-6">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-md font-semibold">Conversations</h3>
-        <button
-          onClick={handleNewConversation}
-          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+  const renderConversationItem = (conv: Conversation) => (
+    <div
+      className={`p-2 rounded mb-2 relative transition-colors ${
+        activeConversation?.id === conv.id 
+          ? 'bg-blue-600 hover:bg-blue-700' 
+          : 'bg-zinc-800 hover:bg-zinc-700'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div 
+          className="text-sm font-medium cursor-pointer flex-1 min-w-0" 
+          onClick={() => handleConversationSelect(conv)}
         >
-          New
-        </button>
+          {conv.title || "Untitled"}
+        </div>
+        <DropdownMenu
+          isOpen={openDropdown === conv.id}
+          onToggle={e => {
+            e.stopPropagation();
+            setOpenDropdown(openDropdown === conv.id ? null : conv.id);
+          }}
+          items={[
+            {
+              label: "Delete",
+              onClick: e => {
+                e.stopPropagation();
+                handleDeleteConversation(conv);
+              },
+              loading: deletingConversationId === conv.id,
+              variant: 'danger'
+            }
+          ]}
+        />
       </div>
-      <ul>
-        {conversations.map((conv) => (
-          <li
-            key={conv.id}
-            className={`p-2 rounded mb-2 relative transition-colors ${
-              activeConversation?.id === conv.id 
-                ? 'bg-blue-600 hover:bg-blue-700' 
-                : 'bg-zinc-800 hover:bg-zinc-700'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div 
-                className="text-sm font-medium cursor-pointer flex-1 min-w-0" 
-                onClick={() => handleConversationSelect(conv)}
-              >
-                {conv.title || "Untitled"}
-              </div>
-              <DropdownMenu
-                isOpen={openDropdown === conv.id}
-                onToggle={e => {
-                  e.stopPropagation();
-                  setOpenDropdown(openDropdown === conv.id ? null : conv.id);
-                }}
-                items={[
-                  {
-                    label: "Delete",
-                    onClick: e => {
-                      e.stopPropagation();
-                      handleDeleteConversation(conv);
-                    },
-                    loading: deletingConversationId === conv.id,
-                    variant: 'danger'
-                  }
-                ]}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs mt-1">
-              <span className="text-zinc-400">
-                {new Date(conv.created_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-              </span>
-              <span className="text-zinc-500">
-                {conv.parts?.length || 0} parts
-              </span>
-            </div>
-          </li>
-        ))}
-        {conversations.length === 0 && (
-          <li className="text-xs text-zinc-500">No conversations yet.</li>
-        )}
-      </ul>
+      <div className="flex items-center justify-between text-xs mt-1">
+        <span className="text-zinc-400">
+          {new Date(conv.created_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+        </span>
+        <span className="text-zinc-500">
+          {conv.parts?.length || 0} parts
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <ListContainer
+        title="Conversations"
+        items={conversations}
+        renderItem={renderConversationItem}
+        getItemKey={(conv) => conv.id}
+        onNewClick={handleNewConversation}
+        className="mt-6"
+        titleClassName="text-md font-semibold"
+        emptyMessage="No conversations yet."
+      />
 
       {/* Toast notification */}
       {toast && (
@@ -181,7 +178,7 @@ const ConversationsList: React.FC = () => {
           <span className="ml-2 text-base select-none">×</span>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

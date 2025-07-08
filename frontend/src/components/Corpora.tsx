@@ -9,6 +9,7 @@ import EstimateCostDialog from "./EstimateCostDialog";
 import type { CostEstimateData } from "./EstimateCostDialog";
 import DeleteCorpusDialog from "./DeleteCorpusDialog";
 import DropdownMenu from "./DropdownMenu";
+import ListContainer from "./ListContainer";
 
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
@@ -229,19 +230,83 @@ const Corpora: React.FC = () => {
     setDeletingCorpus(null);
   };
 
+  const renderCorpusItem = (corpus: Corpus) => (
+    <div
+      className={`p-2 rounded mb-2 relative ${
+        activeCorpus?.id === corpus.id
+          ? "bg-blue-600 text-white"
+          : "bg-zinc-800 hover:bg-zinc-700"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="font-semibold truncate cursor-pointer flex-1 min-w-0" onClick={() => handleCorpusSelect(corpus)}>
+          {corpus.name}
+        </div>
+        <DropdownMenu
+          isOpen={openDropdown === corpus.id}
+          onToggle={e => {
+            e.stopPropagation();
+            setOpenDropdown(openDropdown === corpus.id ? null : corpus.id);
+          }}
+          items={[
+            {
+              label: "Edit",
+              onClick: e => {
+                e.stopPropagation();
+                handleEditCorpus(corpus);
+                setOpenDropdown(null);
+              }
+            },
+            {
+              label: "Scan for Files",
+              onClick: e => {
+                e.stopPropagation();
+                handleScanCorpus(corpus);
+              },
+              loading: scanningCorpusId === corpus.id,
+              disabled: scanningCorpusId === corpus.id
+            },
+            {
+              label: "Estimate Cost",
+              onClick: e => {
+                e.stopPropagation();
+                handleEstimateCost(corpus);
+              }
+            },
+            {
+              label: "Ingest Files",
+              onClick: e => {
+                e.stopPropagation();
+                handleIngestCorpus(corpus);
+              },
+              loading: ingestingCorpusId === corpus.id,
+              disabled: ingestingCorpusId === corpus.id
+            },
+            {
+              label: "Delete",
+              onClick: e => {
+                e.stopPropagation();
+                handleDeleteCorpus(corpus);
+              },
+              variant: 'danger'
+            }
+          ]}
+          menuClassName="min-w-[180px]"
+        />
+      </div>
+      <div className={`text-xs whitespace-pre-line break-words mt-1 ${
+        activeCorpus?.id === corpus.id ? "text-blue-100" : "text-zinc-400"
+      }`}>{corpus.description}</div>
+      <div className={`text-xs ${
+        activeCorpus?.id === corpus.id ? "text-blue-200" : "text-zinc-500"
+      }`}>
+        {new Date(corpus.updated_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+      </div>
+    </div>
+  );
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-bold mb-4">Corpora</h2>
-        <button
-            onClick={handleNewCorpus}
-            disabled={isCreating}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white text-xs rounded transition-colors"
-          >
-          {isCreating ? (dialogMode === 'create' ? "Creating..." : "Updating...") : "New"}
-        </button>
-      </div>
-      
       {error && (
         <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded text-red-200">
           <div className="flex items-center justify-between">
@@ -256,83 +321,16 @@ const Corpora: React.FC = () => {
         </div>
       )}
       
-      <ul>
-        {corpora.map((corpus: Corpus) => (
-          <li
-            key={corpus.id}
-            className={`p-2 rounded mb-2 relative ${
-              activeCorpus?.id === corpus.id
-                ? "bg-blue-600 text-white"
-                : "bg-zinc-800 hover:bg-zinc-700"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="font-semibold truncate cursor-pointer flex-1 min-w-0" onClick={() => handleCorpusSelect(corpus)}>
-                {corpus.name}
-              </div>
-              <DropdownMenu
-                isOpen={openDropdown === corpus.id}
-                onToggle={e => {
-                  e.stopPropagation();
-                  setOpenDropdown(openDropdown === corpus.id ? null : corpus.id);
-                }}
-                items={[
-                  {
-                    label: "Edit",
-                    onClick: e => {
-                      e.stopPropagation();
-                      handleEditCorpus(corpus);
-                      setOpenDropdown(null);
-                    }
-                  },
-                  {
-                    label: "Scan for Files",
-                    onClick: e => {
-                      e.stopPropagation();
-                      handleScanCorpus(corpus);
-                    },
-                    loading: scanningCorpusId === corpus.id,
-                    disabled: scanningCorpusId === corpus.id
-                  },
-                  {
-                    label: "Estimate Cost",
-                    onClick: e => {
-                      e.stopPropagation();
-                      handleEstimateCost(corpus);
-                    }
-                  },
-                  {
-                    label: "Ingest Files",
-                    onClick: e => {
-                      e.stopPropagation();
-                      handleIngestCorpus(corpus);
-                    },
-                    loading: ingestingCorpusId === corpus.id,
-                    disabled: ingestingCorpusId === corpus.id
-                  },
-                  {
-                    label: "Delete",
-                    onClick: e => {
-                      e.stopPropagation();
-                      handleDeleteCorpus(corpus);
-                    },
-                    variant: 'danger'
-                  }
-                ]}
-                menuClassName="min-w-[180px]"
-              />
-            </div>
-            <div className={`text-xs whitespace-pre-line break-words mt-1 ${
-              activeCorpus?.id === corpus.id ? "text-blue-100" : "text-zinc-400"
-            }`}>{corpus.description}</div>
-            <div className={`text-xs ${
-              activeCorpus?.id === corpus.id ? "text-blue-200" : "text-zinc-500"
-            }`}>
-              {new Date(corpus.updated_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <ListContainer
+        title="Corpora"
+        items={corpora}
+        renderItem={renderCorpusItem}
+        getItemKey={(corpus) => corpus.id}
+        onNewClick={handleNewCorpus}
+        newButtonDisabled={isCreating}
+        newButtonLoading={isCreating}
+        newButtonText={isCreating ? (dialogMode === 'create' ? "Creating..." : "Updating...") : "New"}
+      />
 
       <CreateCorpusDialog
         isOpen={isDialogOpen}
