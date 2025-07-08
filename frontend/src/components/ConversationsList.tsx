@@ -3,6 +3,7 @@ import { useAtom } from "jotai";
 import { conversationsAtom, activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
+import DropdownMenu from "./DropdownMenu";
 
 const ConversationsList: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
@@ -73,17 +74,7 @@ const ConversationsList: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenDropdown(null);
-    };
 
-    if (openDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [openDropdown]);
 
   const handleDeleteConversation = async (conversation: Conversation) => {
     setDeletingConversationId(conversation.id);
@@ -149,33 +140,24 @@ const ConversationsList: React.FC = () => {
               >
                 {conv.title || "Untitled"}
               </div>
-              <button
-                onClick={e => {
+              <DropdownMenu
+                isOpen={openDropdown === conv.id}
+                onToggle={e => {
                   e.stopPropagation();
                   setOpenDropdown(openDropdown === conv.id ? null : conv.id);
                 }}
-                className="ml-2 p-0.5 text-xs text-zinc-400 hover:text-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ lineHeight: 1, height: '1.5em', width: '1.5em', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <span style={{ fontSize: '1em', display: 'block', lineHeight: 1 }}>▼</span>
-              </button>
-              {openDropdown === conv.id && (
-                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[120px]">
-                  <button
-                    onClick={e => {
+                items={[
+                  {
+                    label: "Delete",
+                    onClick: e => {
                       e.stopPropagation();
                       handleDeleteConversation(conv);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors text-red-400 hover:text-red-300 flex items-center"
-                    disabled={deletingConversationId === conv.id}
-                  >
-                    {deletingConversationId === conv.id ? (
-                      <span className="animate-spin mr-2">⏳</span>
-                    ) : null}
-                    Delete
-                  </button>
-                </div>
-              )}
+                    },
+                    loading: deletingConversationId === conv.id,
+                    variant: 'danger'
+                  }
+                ]}
+              />
             </div>
             <div className="text-xs text-zinc-400">
               {new Date(conv.created_at).toLocaleString()}

@@ -8,6 +8,7 @@ import type { CorpusFormData } from "./CreateCorpusDialog";
 import EstimateCostDialog from "./EstimateCostDialog";
 import type { CostEstimateData } from "./EstimateCostDialog";
 import DeleteCorpusDialog from "./DeleteCorpusDialog";
+import DropdownMenu from "./DropdownMenu";
 
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
@@ -53,17 +54,7 @@ const Corpora: React.FC = () => {
     fetchCorpora();
   }, [setCorpora]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenDropdown(null);
-    };
 
-    if (openDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [openDropdown]);
 
   const handleCorpusSelect = (corpus: Corpus) => {
     // Only clear conversations if the corpus actually changes
@@ -279,74 +270,57 @@ const Corpora: React.FC = () => {
               <div className="font-semibold truncate cursor-pointer flex-1 min-w-0" onClick={() => handleCorpusSelect(corpus)}>
                 {corpus.name}
               </div>
-              <button
-                onClick={e => {
+              <DropdownMenu
+                isOpen={openDropdown === corpus.id}
+                onToggle={e => {
                   e.stopPropagation();
                   setOpenDropdown(openDropdown === corpus.id ? null : corpus.id);
                 }}
-                className="ml-2 p-0.5 text-xs text-zinc-400 hover:text-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{ lineHeight: 1, height: '1.5em', width: '1.5em', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <span style={{ fontSize: '1em', display: 'block', lineHeight: 1 }}>▼</span>
-              </button>
-              {openDropdown === corpus.id && (
-                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[180px]">
-                  <button
-                    onClick={e => {
+                items={[
+                  {
+                    label: "Edit",
+                    onClick: e => {
                       e.stopPropagation();
                       handleEditCorpus(corpus);
                       setOpenDropdown(null);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={e => {
+                    }
+                  },
+                  {
+                    label: "Scan for Files",
+                    onClick: e => {
                       e.stopPropagation();
                       handleScanCorpus(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors flex items-center"
-                    disabled={scanningCorpusId === corpus.id}
-                  >
-                    {scanningCorpusId === corpus.id ? (
-                      <span className="animate-spin mr-2">⏳</span>
-                    ) : null}
-                    Scan for Files
-                  </button>
-                  <button
-                    onClick={e => {
+                    },
+                    loading: scanningCorpusId === corpus.id,
+                    disabled: scanningCorpusId === corpus.id
+                  },
+                  {
+                    label: "Estimate Cost",
+                    onClick: e => {
                       e.stopPropagation();
                       handleEstimateCost(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
-                  >
-                    Estimate Cost
-                  </button>
-                  <button
-                    onClick={e => {
+                    }
+                  },
+                  {
+                    label: "Ingest Files",
+                    onClick: e => {
                       e.stopPropagation();
                       handleIngestCorpus(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors flex items-center"
-                    disabled={ingestingCorpusId === corpus.id}
-                  >
-                    {ingestingCorpusId === corpus.id ? (
-                      <span className="animate-spin mr-2">⏳</span>
-                    ) : null}
-                    Ingest Files
-                  </button>
-                  <button
-                    onClick={e => {
+                    },
+                    loading: ingestingCorpusId === corpus.id,
+                    disabled: ingestingCorpusId === corpus.id
+                  },
+                  {
+                    label: "Delete",
+                    onClick: e => {
                       e.stopPropagation();
                       handleDeleteCorpus(corpus);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors text-red-400 hover:text-red-300"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
+                    },
+                    variant: 'danger'
+                  }
+                ]}
+                menuClassName="min-w-[180px]"
+              />
             </div>
             <div className="text-xs text-zinc-400 whitespace-pre-line break-words mt-1">{corpus.description}</div>
             <div className="text-xs text-zinc-500">
