@@ -135,7 +135,7 @@ const ConversationsList: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div 
-                className="font-medium cursor-pointer flex-1 min-w-0" 
+                className="text-sm font-medium cursor-pointer flex-1 min-w-0" 
                 onClick={() => handleConversationSelect(conv)}
               >
                 {conv.title || "Untitled"}
@@ -159,11 +159,13 @@ const ConversationsList: React.FC = () => {
                 ]}
               />
             </div>
-            <div className="text-xs text-zinc-400">
-              {new Date(conv.created_at).toLocaleString()}
-            </div>
-            <div className="text-xs text-zinc-500">
-              {conv.parts?.length || 0} parts
+            <div className="flex items-center justify-between text-xs mt-1">
+              <span className="text-zinc-400">
+                {new Date(conv.created_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </span>
+              <span className="text-zinc-500">
+                {conv.parts?.length || 0} parts
+              </span>
             </div>
           </li>
         ))}

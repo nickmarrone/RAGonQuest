@@ -322,9 +322,13 @@ const Corpora: React.FC = () => {
                 menuClassName="min-w-[180px]"
               />
             </div>
-            <div className="text-xs text-zinc-400 whitespace-pre-line break-words mt-1">{corpus.description}</div>
-            <div className="text-xs text-zinc-500">
-              Updated: {new Date(corpus.updated_at).toLocaleString()}
+            <div className={`text-xs whitespace-pre-line break-words mt-1 ${
+              activeCorpus?.id === corpus.id ? "text-blue-100" : "text-zinc-400"
+            }`}>{corpus.description}</div>
+            <div className={`text-xs ${
+              activeCorpus?.id === corpus.id ? "text-blue-200" : "text-zinc-500"
+            }`}>
+              {new Date(corpus.updated_at).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
             </div>
           </li>
         ))}
