@@ -5,6 +5,8 @@ import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAto
 import type { Corpus } from "../types";
 import CreateCorpusDialog from "./CreateCorpusDialog";
 import type { CorpusFormData } from "./CreateCorpusDialog";
+import EstimateCostDialog from "./EstimateCostDialog";
+import type { CostEstimateData } from "./EstimateCostDialog";
 
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
@@ -20,6 +22,10 @@ const Corpora: React.FC = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [costDialogOpen, setCostDialogOpen] = useState(false);
+  const [costDialogLoading, setCostDialogLoading] = useState(false);
+  const [costDialogError, setCostDialogError] = useState<string | null>(null);
+  const [costDialogData, setCostDialogData] = useState<CostEstimateData | undefined>(undefined);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -139,6 +145,27 @@ const Corpora: React.FC = () => {
     }
   };
 
+  const handleEstimateCost = async (corpus: Corpus) => {
+    setCostDialogOpen(true);
+    setCostDialogLoading(true);
+    setCostDialogError(null);
+    setCostDialogData(undefined);
+    setOpenDropdown(null);
+    try {
+      const response = await fetch(`/corpora/${corpus.id}/cost_estimate`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch cost estimate');
+      }
+      const data = await response.json();
+      setCostDialogData(data);
+    } catch (error) {
+      setCostDialogError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setCostDialogLoading(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -191,7 +218,7 @@ const Corpora: React.FC = () => {
                 <span style={{ fontSize: '1em', display: 'block', lineHeight: 1 }}>▼</span>
               </button>
               {openDropdown === corpus.id && (
-                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[140px]">
+                <div className="absolute right-2 top-8 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-10 min-w-[160px]">
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -214,6 +241,15 @@ const Corpora: React.FC = () => {
                       <span className="animate-spin mr-2">⏳</span>
                     ) : null}
                     Scan for Files
+                  </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleEstimateCost(corpus);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors"
+                  >
+                    Estimate Cost
                   </button>
                 </div>
               )}
@@ -241,6 +277,14 @@ const Corpora: React.FC = () => {
           embedding_model: editingCorpus.embedding_model,
           completion_model: editingCorpus.completion_model,
         } : undefined}
+      />
+
+      <EstimateCostDialog
+        isOpen={costDialogOpen}
+        onClose={() => setCostDialogOpen(false)}
+        costData={costDialogData}
+        loading={costDialogLoading}
+        error={costDialogError}
       />
 
       {/* Toast notification */}
