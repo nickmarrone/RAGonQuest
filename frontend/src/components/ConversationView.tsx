@@ -3,6 +3,7 @@ import { useAtom } from "jotai";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { ConversationPart } from "../types";
+import Dialog from "./Dialog";
 
 interface ConversationViewProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -14,36 +15,23 @@ const ContextChunksDialog: React.FC<{
   onClose: () => void;
   chunks: string[];
 }> = ({ isOpen, onClose, chunks }) => {
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-  if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Context Chunks</h2>
-          <button
-            onClick={onClose}
-            className="text-zinc-400 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="space-y-4">
-          {chunks.map((chunk, idx) => (
-            <div key={idx} className="bg-zinc-800 rounded p-3 text-zinc-200 text-sm whitespace-pre-wrap">
-              {chunk}
-            </div>
-          ))}
-        </div>
+    <Dialog
+      isOpen={isOpen}
+      onCancel={onClose}
+      title="Context"
+      maxWidth="max-w-4xl"
+      showCancelButton={true}
+      cancelButtonLabel="Close"
+    >
+      <div className="space-y-4">
+        {chunks.map((chunk, idx) => (
+          <div key={idx} className="bg-zinc-800 rounded p-3 text-zinc-200 text-sm whitespace-pre-wrap">
+            {chunk}
+          </div>
+        ))}
       </div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -101,9 +89,6 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
         <h1 className="text-2xl font-bold mb-2">
           {activeConversation?.title || "Untitled Conversation"}
         </h1>
-        <p className="text-zinc-400 text-sm">
-          Created: {activeConversation ? new Date(activeConversation.created_at).toLocaleString() : ""}
-        </p>
       </div>
 
       <div className="flex justify-center w-full">
@@ -129,7 +114,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
                     <div className="flex justify-end mt-2">
                       <div
                         className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-600 transition-colors shadow cursor-pointer"
-                        title="Show context chunks"
+                        title="Show context"
                         onClick={() => setOpenChunksPartId(part.id)}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
