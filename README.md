@@ -2,26 +2,61 @@
 
 ![RAGonQuest Logo](ragonquest_logo.png)
 
-A Docker-based RAG (Retrieval-Augmented Generation) toolkit that enables you to build powerful question-answering systems over your own documents. RAGonQuest combines the power of OpenAI's language models with Qdrant vector database to provide accurate, context-aware responses based on your custom knowledge base.
+A comprehensive RAG (Retrieval-Augmented Generation) application that enables you to build powerful question-answering systems over your own documents. RAGonQuest combines the power of OpenAI's language models with Qdrant vector database to provide accurate, context-aware responses based on your custom knowledge base.
 
 ## What RAGonQuest Does
 
-RAGonQuest is a comprehensive RAG application that allows you to:
+RAGonQuest is a full-stack RAG application that allows you to:
 
-- **Ingest Documents**: Upload and process text files into searchable knowledge bases
-- **Create Corpora**: Organize your documents into logical collections with custom prompts
+### Document Management
+- **Create Knowledge Corpora**: Organize your documents into logical collections with custom configurations
+- **File Scanning**: Automatically discover and add text files from specified directories
+- **Document Ingestion**: Process and embed documents into searchable vector representations
+- **File Tracking**: Monitor which files have been processed and which remain to be ingested
+
+### AI-Powered Conversations
+- **Natural Language Queries**: Ask questions in plain English and get intelligent responses
+- **Context-Aware Responses**: AI generates answers based on relevant document chunks
+- **Conversation History**: Maintain full conversation threads with context and sources
+- **Multi-turn Conversations**: Continue conversations with follow-up questions
+- **Source Attribution**: See which documents were used to generate each response
+
+### Advanced Search & Retrieval
 - **Semantic Search**: Use advanced vector embeddings to find relevant information
-- **Conversational AI**: Have natural conversations with your data using OpenAI's language models
-- **Cost Estimation**: Get detailed cost estimates before processing large document collections
-- **Conversation History**: Maintain full conversation history with context and sources
-- **RESTful API**: Access all functionality through a well-documented FastAPI interface
+- **Configurable Similarity Thresholds**: Adjust how closely content must match your queries
+- **Context Chunk Visualization**: View the exact text chunks used to generate responses
+- **Flexible Retrieval Limits**: Control how many context chunks to retrieve
 
-The system uses:
-- **FastAPI** for the web framework
-- **Qdrant** for vector storage and similarity search
-- **SQLite** for metadata and conversation storage
-- **OpenAI** for embeddings and language model completions
-- **Docker** for easy deployment and development
+### Cost Management
+- **Embedding Cost Estimation**: Get detailed cost estimates before processing large document collections
+- **Per-File Cost Analysis**: See estimated costs for individual files
+- **Batch Processing**: Process multiple files efficiently to optimize costs
+
+### Modern Web Interface
+- **Responsive Design**: Clean, modern UI built with React and Tailwind CSS
+- **Real-time Updates**: Instant feedback on operations and conversation updates
+- **Intuitive Navigation**: Easy switching between corpora and conversations
+- **Context Visualization**: Click to view the source chunks used for each response
+- **Conversation Management**: Create, view, and delete conversations easily
+
+### Developer-Friendly Features
+- **RESTful API**: Complete API with interactive documentation
+- **Database Migrations**: Automated schema management with Alembic
+- **Interactive Console**: Python REPL with access to all project resources
+- **Docker Support**: Easy deployment with Docker Compose
+- **Environment Configuration**: Flexible configuration management
+
+## Architecture
+
+The system uses a modern, scalable architecture:
+
+- **Backend**: FastAPI with SQLAlchemy ORM
+- **Database**: SQLite for metadata and conversation storage
+- **Vector Database**: Qdrant for semantic search and embeddings
+- **AI Services**: OpenAI for embeddings and language model completions
+- **Frontend**: React with TypeScript and Tailwind CSS
+- **State Management**: Jotai for reactive state management
+- **Deployment**: Docker and Docker Compose for easy setup
 
 ## Quick Start with Docker
 
@@ -56,15 +91,15 @@ The easiest way to get RAGonQuest running is using Docker Compose, which will se
    ```
 
 5. **Access the application**:
-   - API: http://localhost:8000
-   - Interactive API docs: http://localhost:8000/docs
-   - ReDoc documentation: http://localhost:8000/redoc
+   - Web Interface: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+   - ReDoc Documentation: http://localhost:8000/redoc
 
 ### Docker Services
 
 The Docker Compose setup includes:
 
-- **ragonquest**: The main FastAPI application
+- **ragonquest**: The main FastAPI application with React frontend
 - **qdrant**: Vector database for storing embeddings
 - **Volumes**: Persistent storage for data and Qdrant collections
 
@@ -88,8 +123,9 @@ If you prefer to run RAGonQuest without Docker, follow these instructions:
 - Python 3.8 or higher
 - [uv](https://github.com/astral-sh/uv) - Fast Python package installer and resolver
 - SQLite
+- Node.js 18+ (for frontend development)
 
-### Installing Dependencies
+### Backend Setup
 
 1. **Install uv** (if not already installed):
    ```bash
@@ -102,24 +138,17 @@ If you prefer to run RAGonQuest without Docker, follow these instructions:
    cd RAGonQuest
    ```
 
-3. **Install dependencies using uv**:
+3. **Install Python dependencies**:
    ```bash
    uv sync
    ```
 
-   This will:
-   - Create a virtual environment
-   - Install all dependencies from `requirements.txt`
-   - Generate lock files for reproducible builds
-
-### Environment Configuration
-
-1. **Copy the environment template**:
+4. **Set up environment variables**:
    ```bash
    cp env.example .env
    ```
 
-2. **Edit the `.env` file** with your configuration:
+5. **Edit the `.env` file** with your configuration:
    ```bash
    # Database configuration
    DATABASE_URL=sqlite:///data/ragonquest.db
@@ -131,127 +160,209 @@ If you prefer to run RAGonQuest without Docker, follow these instructions:
    QDRANT_URL=http://localhost:6333
    ```
 
-### Database Setup
-
-1. **Run database migrations**:
+6. **Run database migrations**:
    ```bash
    uv run alembic upgrade head
    ```
 
-### Running the Server
-
-#### Development Mode
-
-1. **Start the FastAPI development server**:
+7. **Start the FastAPI server**:
    ```bash
    uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-2. **Access the API**:
-   - API: http://localhost:8000
-   - Interactive docs: http://localhost:8000/docs
-   - ReDoc docs: http://localhost:8000/redoc
+### Frontend Setup
 
-#### Production Mode
-
-1. **Start the production server**:
+1. **Navigate to the frontend directory**:
    ```bash
-   uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+   cd frontend
    ```
 
-### Alternative: Using uvx for Direct Execution
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-You can also run commands directly without activating the virtual environment:
+3. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Access the frontend**: http://localhost:5173
+
+## Core Features in Detail
+
+### Corpus Management
+
+**Create and Configure Corpora**
+- Define custom names, descriptions, and prompts for each corpus
+- Set embedding and completion models (e.g., text-embedding-3-small, gpt-4o-mini)
+- Configure similarity thresholds for search precision
+- Specify file paths for document storage
+
+**File Operations**
+- Scan directories for .txt files automatically
+- Track ingestion status of each file
+- Batch process multiple files for embedding
+- Monitor file processing progress
+
+**Cost Estimation**
+- Estimate embedding costs before processing
+- View per-file cost breakdowns
+- Calculate total corpus processing costs
+- Optimize batch sizes for cost efficiency
+
+### Conversation System
+
+**Natural Language Interface**
+- Ask questions in plain English
+- Get context-aware responses from your documents
+- Maintain conversation context across multiple turns
+- View conversation history with timestamps
+
+**Advanced Features**
+- Configurable context retrieval limits
+- Adjustable similarity thresholds per corpus
+- Source attribution for all responses
+- Context chunk visualization
+
+**Conversation Management**
+- Create new conversations with any corpus
+- Continue existing conversations
+- View all conversation parts with metadata
+- Delete conversations when no longer needed
+
+### Vector Search & Embeddings
+
+**Semantic Search**
+- Advanced vector embeddings using OpenAI models
+- Configurable similarity thresholds (0.0-1.0)
+- Flexible chunk sizes and overlap settings
+- Batch processing for efficiency
+
+**Context Retrieval**
+- Intelligent chunk selection based on query relevance
+- Configurable retrieval limits
+- Source file tracking
+- Chunk metadata preservation
+
+### Web Interface
+
+**Modern UI Components**
+- Responsive sidebar with corpora and conversations
+- Real-time conversation view with chat-like interface
+- Context chunk visualization dialogs
+- Toast notifications for user feedback
+
+**Interactive Features**
+- Dropdown menus for corpus and conversation actions
+- Loading states and progress indicators
+- Error handling with user-friendly messages
+- Keyboard shortcuts (Enter to send, Escape to close dialogs)
+
+## API Reference
+
+### Corpus Endpoints
+
+- `POST /corpora/` - Create a new corpus
+- `GET /corpora/` - List all corpora
+- `GET /corpora/{corpus_id}` - Get specific corpus
+- `PATCH /corpora/{corpus_id}` - Update corpus
+- `DELETE /corpora/{corpus_id}` - Delete corpus
+- `POST /corpora/{corpus_id}/scan` - Scan for files
+- `POST /corpora/{corpus_id}/ingest` - Ingest files to vector database
+- `GET /corpora/{corpus_id}/cost_estimate` - Estimate embedding costs
+
+### Conversation Endpoints
+
+- `GET /corpora/{corpus_id}/conversations` - List conversations
+- `GET /corpora/{corpus_id}/conversations/{conversation_id}` - Get conversation
+- `POST /corpora/{corpus_id}/conversations` - Create new conversation
+- `POST /corpora/{corpus_id}/conversations/{conversation_id}/continue` - Continue conversation
+- `DELETE /corpora/{corpus_id}/conversations/{conversation_id}` - Delete conversation
+
+## 🛠️ Development Tools
+
+### Interactive Console
+
+RAGonQuest includes an interactive Python console for development and debugging:
 
 ```bash
-# Run the server
-uvx uvicorn app.main:app --reload
-
-# Run migrations
-uvx alembic upgrade head
-
-# Run tests
-uvx pytest
+python console.py
+# or
+uv run python console.py
 ```
 
-## Development Workflow
+The console provides access to:
+- Database models and sessions
+- All Pydantic schemas
+- Services and utilities
+- FastAPI app instance
 
-1. **Activate the virtual environment** (optional with uv):
-   ```bash
-   source .venv/bin/activate  # Linux/macOS
-   # or
-   .venv\Scripts\activate     # Windows
-   ```
+### Database Migrations
 
-2. **Install new dependencies**:
-   ```bash
-   uv add package_name
-   ```
+Manage database schema changes with Alembic:
 
-3. **Update dependencies**:
-   ```bash
-   uv sync --upgrade
-   ```
+```bash
+# Create a new migration
+uv run alembic revision --autogenerate -m "Description"
 
-4. **Run linting and formatting**:
-   ```bash
-   uv run black .
-   uv run isort .
-   uv run flake8 .
-   ```
+# Apply migrations
+uv run alembic upgrade head
 
-## API Usage
+# Rollback migrations
+uv run alembic downgrade -1
+```
+
+## Configuration Options
+
+### Environment Variables
+
+- `DATABASE_URL`: Database connection string
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `QDRANT_URL`: Qdrant vector database URL
+- `DEBUG`: Enable debug mode
+- `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
+
+### Corpus Configuration
+
+- **Embedding Models**: text-embedding-3-small, text-embedding-3-large
+- **Completion Models**: gpt-4o-mini, gpt-4o, gpt-3.5-turbo
+- **Similarity Thresholds**: 0.0-1.0 (higher = more precise matches)
+- **Chunk Sizes**: Configurable token limits for text chunking
+- **Batch Sizes**: Number of chunks to process simultaneously
+
+## Usage Examples
 
 ### Creating a Corpus
 
-1. Create a corpus to organize your documents:
-   ```bash
-   curl -X POST "http://localhost:8000/corpora/" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "name": "my_documents",
-       "description": "My document collection",
-       "path": "/app/corpora/my_documents"
-     }'
-   ```
+1. Use the web interface to create a new corpus
+2. Set the path to your document directory
+3. Configure embedding and completion models
+4. Set your preferred similarity threshold
 
-2. Scan for text files in the corpus directory:
-   ```bash
-   curl -X POST "http://localhost:8000/corpora/{corpus_id}/scan"
-   ```
+### Processing Documents
 
-3. Get cost estimates before ingestion:
-   ```bash
-   curl "http://localhost:8000/corpora/{corpus_id}/cost_estimate"
-   ```
+1. Click "Scan for Files" to discover .txt files
+2. Review the cost estimate before processing
+3. Click "Ingest Files" to embed documents
+4. Monitor progress and verify completion
 
-4. Ingest documents into the vector database:
-   ```bash
-   curl -X POST "http://localhost:8000/corpora/{corpus_id}/ingest"
-   ```
+### Starting Conversations
 
-### Querying Your Data
+1. Select a corpus from the sidebar
+2. Click "New Conversation" or select an existing one
+3. Ask your first question
+4. Continue the conversation with follow-ups
 
-1. Create a conversation with your data:
-   ```bash
-   curl -X POST "http://localhost:8000/corpora/{corpus_id}/conversations" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "title": "My Question",
-       "query": "What is the main topic of the documents?"
-     }'
-   ```
+### Viewing Context
 
-2. Continue an existing conversation:
-   ```bash
-   curl -X POST "http://localhost:8000/corpora/{corpus_id}/conversations/{conversation_id}/continue" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "query": "Can you elaborate on that?"
-     }'
-   ```
+1. In any conversation, look for the document icon in AI responses
+2. Click the icon to view the source chunks used
+3. Review the exact text that informed the AI's response
 
 ## Troubleshooting
+
+### Common Issues
 
 - **Port already in use**: Change the port in the uvicorn command or Docker configuration
 - **Database connection issues**: Check your DATABASE_URL in the .env file
@@ -261,6 +372,35 @@ uvx pytest
 - **Qdrant connection**: Ensure the Qdrant service is running on port 6333
 - **OpenAI API errors**: Verify your API key is correct and has sufficient credits
 
+### Debug Mode
+
+Enable debug mode for detailed logging:
+
+```bash
+DEBUG=True uv run uvicorn app.main:app --reload
+```
+
+### Health Checks
+
+Check service health:
+
+```bash
+curl http://localhost:8000/health
+```
+
 ## License
 
 This project is licensed under the terms specified in the LICENSE file.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## Support
+
+If you encounter any issues or have questions, please:
+
+1. Check the troubleshooting section above
+2. Review the API documentation at `/docs`
+3. Open an issue on the project repository
+4. Check the logs for detailed error information
