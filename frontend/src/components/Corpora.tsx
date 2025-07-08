@@ -7,6 +7,7 @@ import CreateCorpusDialog from "./CreateCorpusDialog";
 import type { CorpusFormData } from "./CreateCorpusDialog";
 import EstimateCostDialog from "./EstimateCostDialog";
 import type { CostEstimateData } from "./EstimateCostDialog";
+import DeleteCorpusDialog from "./DeleteCorpusDialog";
 
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
@@ -27,6 +28,9 @@ const Corpora: React.FC = () => {
   const [costDialogError, setCostDialogError] = useState<string | null>(null);
   const [costDialogData, setCostDialogData] = useState<CostEstimateData | undefined>(undefined);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingCorpus, setDeletingCorpus] = useState<Corpus | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -188,6 +192,52 @@ const Corpora: React.FC = () => {
     }
   };
 
+  const handleDeleteCorpus = (corpus: Corpus) => {
+    setDeletingCorpus(corpus);
+    setDeleteDialogOpen(true);
+    setOpenDropdown(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingCorpus) return;
+    
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/corpora/${deletingCorpus.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete corpus');
+      }
+      
+      // Close dialog and refresh corpora list
+      setDeleteDialogOpen(false);
+      setDeletingCorpus(null);
+      fetchCorpora();
+      
+      // Clear active corpus if it was the one being deleted
+      if (activeCorpus?.id === deletingCorpus.id) {
+        setActiveCorpus(null);
+        setActiveConversation(null);
+        setConversationParts([]);
+        setIsNewConversationMode(true);
+      }
+      
+      showToast('Corpus deleted successfully!');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setDeletingCorpus(null);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -286,6 +336,15 @@ const Corpora: React.FC = () => {
                     ) : null}
                     Ingest Files
                   </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleDeleteCorpus(corpus);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-700 transition-colors text-red-400 hover:text-red-300"
+                  >
+                    Delete
+                  </button>
                 </div>
               )}
             </div>
@@ -321,6 +380,14 @@ const Corpora: React.FC = () => {
         costData={costDialogData}
         loading={costDialogLoading}
         error={costDialogError}
+      />
+
+      <DeleteCorpusDialog
+        isOpen={deleteDialogOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        corpus={deletingCorpus}
+        isLoading={isDeleting}
       />
 
       {/* Toast notification */}
