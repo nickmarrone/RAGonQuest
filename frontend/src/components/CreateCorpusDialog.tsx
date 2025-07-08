@@ -5,6 +5,8 @@ interface CreateCorpusDialogProps {
   onClose: () => void;
   onSave: (corpusData: CorpusFormData) => void;
   isLoading?: boolean;
+  mode: 'create' | 'edit';
+  initialData?: CorpusFormData;
 }
 
 export interface CorpusFormData {
@@ -32,16 +34,22 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
   onClose,
   onSave,
   isLoading = false,
+  mode,
+  initialData,
 }) => {
   const [formData, setFormData] = useState<CorpusFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<CorpusFormData>>({});
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(initialFormData);
+      if (mode === 'edit' && initialData) {
+        setFormData(initialData);
+      } else {
+        setFormData(initialFormData);
+      }
       setErrors({});
     }
-  }, [isOpen]);
+  }, [isOpen, mode, initialData]);
 
   if (!isOpen) return null;
 
@@ -84,10 +92,10 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Create New Corpus</h2>
+          <h2 className="text-xl font-bold">{mode === 'create' ? 'Create New Corpus' : 'Edit Corpus'}</h2>
           <button
             onClick={onClose}
             className="text-zinc-400 hover:text-white transition-colors"
@@ -228,7 +236,7 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
               disabled={isLoading}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white rounded transition-colors"
             >
-              {isLoading ? "Creating..." : "Create Corpus"}
+              {isLoading ? (mode === 'create' ? "Creating..." : "Updating...") : (mode === 'create' ? "Create Corpus" : "Update Corpus")}
             </button>
           </div>
         </form>
