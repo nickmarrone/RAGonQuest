@@ -5,6 +5,7 @@ import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
 import DropdownMenu from "./DropdownMenu";
 import ListContainer from "./ListContainer";
+import { useToast } from "../hooks/useToast";
 
 const ConversationsList: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
@@ -14,7 +15,7 @@ const ConversationsList: React.FC = () => {
   const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const { showSuccess, showError } = useToast();
 
   const fetchConversations = async () => {
     if (!activeCorpus) {
@@ -70,10 +71,7 @@ const ConversationsList: React.FC = () => {
     setIsNewConversationMode(true);
   };
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
+
 
 
 
@@ -100,10 +98,10 @@ const ConversationsList: React.FC = () => {
       
       // Refresh conversations list
       fetchConversations();
-      showToast('Conversation deleted successfully!');
+      showSuccess('Conversation deleted successfully!');
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      showToast('Failed to delete conversation');
+      showError('Failed to delete conversation');
     } finally {
       setDeletingConversationId(null);
     }
@@ -170,14 +168,6 @@ const ConversationsList: React.FC = () => {
         titleClassName="text-md font-semibold"
         emptyMessage="No conversations yet."
       />
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="fixed top-8 right-8 bg-green-600 border border-green-700 text-white px-6 py-3 rounded shadow-lg z-50 flex items-center space-x-2 animate-fade-in">
-          <span>{toast}</span>
-          <span className="ml-2 text-base select-none">×</span>
-        </div>
-      )}
     </>
   );
 };
