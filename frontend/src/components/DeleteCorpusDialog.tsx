@@ -5,7 +5,7 @@ import Dialog from "./Dialog";
 interface DeleteCorpusDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   corpus: Corpus | null;
   isLoading: boolean;
 }
@@ -19,11 +19,15 @@ const DeleteCorpusDialog: React.FC<DeleteCorpusDialogProps> = ({
 }) => {
   if (!corpus) return null;
 
+  const handleConfirm = async () => {
+    await onConfirm();
+  };
+
   return (
     <Dialog
       isOpen={isOpen}
       onCancel={onClose}
-      onCommit={onConfirm}
+      onCommit={handleConfirm}
       title="Delete Corpus"
       maxWidth="max-w-md"
       commitButtonLabel={isLoading ? "Deleting..." : "Delete"}
