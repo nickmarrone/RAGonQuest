@@ -73,8 +73,7 @@ const Dialog: React.FC<DialogProps> = ({
     <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
       <div className={`bg-zinc-900 border border-zinc-700 rounded-lg w-full ${maxWidth} ${maxHeight} flex flex-col shadow-2xl pointer-events-auto`}>
         {/* Header - Fixed */}
-        {(title || true) && (
-          <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
             {title && <h2 className="text-xl font-bold">{title}</h2>}
             <button
               onClick={onCancel}
@@ -83,7 +82,6 @@ const Dialog: React.FC<DialogProps> = ({
               ✕
             </button>
           </div>
-        )}
 
         {/* Body - Scrollable */}
         <div className="flex-1 overflow-y-auto px-6">

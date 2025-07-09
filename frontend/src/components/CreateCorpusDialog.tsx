@@ -1,25 +1,16 @@
 import React, { useState, useEffect } from "react";
 import Dialog from "./Dialog";
+import type { Corpus } from "../types";
 
 interface CreateCorpusDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (corpusData: CorpusFormData) => void;
-  isLoading?: boolean;
-  mode: 'create' | 'edit';
-  initialData?: CorpusFormData;
+  onSuccess: (corpus: Corpus) => void;
+  initialData?: Corpus;
 }
 
-export interface CorpusFormData {
-  name: string;
-  description: string;
-  default_prompt: string;
-  qdrant_collection_name: string;
-  path: string;
-  embedding_model: string;
-  completion_model: string;
-  similarity_threshold: number;
-}
+// Form data type that excludes read-only fields from Corpus
+type CorpusFormData = Omit<Corpus, 'id' | 'created_at' | 'updated_at' | 'files'>;
 
 const initialFormData: CorpusFormData = {
   name: "",
@@ -32,27 +23,40 @@ const initialFormData: CorpusFormData = {
   similarity_threshold: 0.7,
 };
 
+// Helper to omit fields from an object
+type OmitFields<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+function omitFields<T, K extends keyof T>(obj: T, keys: K[]): OmitFields<T, K> {
+  const clone = { ...obj };
+  keys.forEach((key) => { delete clone[key]; });
+  return clone;
+}
+
 const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
   isOpen,
   onClose,
-  onSave,
-  isLoading = false,
-  mode,
+  onSuccess,
   initialData,
 }) => {
   const [formData, setFormData] = useState<CorpusFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<CorpusFormData>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Determine if we're in edit mode based on presence of id
+  const isEditMode = Boolean(initialData?.id);
 
   useEffect(() => {
     if (isOpen) {
-      if (mode === 'edit' && initialData) {
-        setFormData(initialData);
+      if (isEditMode && initialData) {
+        // Omit read-only fields
+        setFormData(omitFields(initialData, ['id', 'created_at', 'updated_at', 'files']));
       } else {
         setFormData(initialFormData);
       }
       setErrors({});
+      setApiError(null);
     }
-  }, [isOpen, mode, initialData]);
+  }, [isOpen, isEditMode, initialData]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<CorpusFormData> = {};
@@ -77,11 +81,34 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleSave = async () => {
+    if (!validateForm()) return;
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const url = isEditMode ? `/corpora/${initialData?.id}` : '/corpora';
+      const method = isEditMode ? 'PATCH' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Failed to ${isEditMode ? 'update' : 'create'} corpus`);
+      }
+      const updatedCorpus = await response.json();
+      onSuccess(updatedCorpus);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave(formData);
-    }
+    handleSave();
   };
 
   const handleInputChange = (field: keyof CorpusFormData, value: string | number) => {
@@ -96,17 +123,18 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
     <Dialog
       isOpen={isOpen}
       onCancel={onClose}
-      onCommit={() => {
-        if (validateForm()) {
-          onSave(formData);
-        }
-      }}
-      title={mode === 'create' ? 'Create New Corpus' : 'Edit Corpus'}
-      commitButtonLabel={isLoading ? (mode === 'create' ? "Creating..." : "Updating...") : (mode === 'create' ? "Create Corpus" : "Update Corpus")}
+      onCommit={handleSave}
+      title={isEditMode ? 'Edit Corpus' : 'Create New Corpus'}
+      commitButtonLabel={isLoading ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Corpus" : "Create Corpus")}
       commitButtonVariant="primary"
       commitButtonDisabled={isLoading}
       commitButtonLoading={isLoading}
     >
+      {apiError && (
+        <div className="mb-2 p-2 bg-red-900 border border-red-700 rounded text-red-200">
+          {apiError}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">
