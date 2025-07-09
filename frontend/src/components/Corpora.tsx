@@ -9,6 +9,7 @@ import type { CostEstimateData } from "./EstimateCostDialog";
 import DeleteCorpusDialog from "./DeleteCorpusDialog";
 import DropdownMenu from "./DropdownMenu";
 import ListContainer from "./ListContainer";
+import { useToast } from "../hooks/useToast";
 
 type DialogState = 
   | { type: 'none' }
@@ -27,13 +28,8 @@ const Corpora: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
+  const { showSuccess } = useToast();
 
   const fetchCorpora = () => {
     fetch(`/corpora`)
@@ -87,7 +83,7 @@ const Corpora: React.FC = () => {
         throw new Error(errorData.detail || 'Failed to scan corpus');
       }
       fetchCorpora();
-      showToast('Scan complete!');
+      showSuccess('Scan complete!');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
@@ -129,7 +125,7 @@ const Corpora: React.FC = () => {
         throw new Error(errorData.detail || 'Failed to ingest corpus files');
       }
       fetchCorpora();
-      showToast('Ingestion complete!');
+      showSuccess('Ingestion complete!');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
@@ -167,7 +163,7 @@ const Corpora: React.FC = () => {
         clearConversation();
       }
       
-      showToast('Corpus deleted successfully!');
+      showSuccess('Corpus deleted successfully!');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
@@ -318,14 +314,6 @@ const Corpora: React.FC = () => {
           corpus={dialogState.corpus}
           isLoading={dialogState.loading}
         />
-      )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div className="fixed top-8 right-8 bg-green-600 border border-green-700 text-white px-6 py-3 rounded shadow-lg z-50 flex items-center space-x-2 animate-fade-in">
-          <span>{toast}</span>
-          <span className="ml-2 text-base select-none">×</span>
-        </div>
       )}
     </div>
   );
