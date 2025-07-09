@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
+import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import { openDialogAtom } from "../atoms/dialogAtom";
 import type { ConversationPart } from "../types";
@@ -12,9 +12,11 @@ interface ConversationViewProps {
 const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
   const activeConversation = useAtomValue(activeConversationAtom);
   const conversationParts = useAtomValue(conversationPartsAtom);
-  const isNewConversationMode = useAtomValue(isNewConversationModeAtom);
   const activeCorpus = useAtomValue(activeCorpusAtom);
   const openDialog = useSetAtom(openDialogAtom);
+
+  // Detect if this is a new conversation (no active conversation or no parts)
+  const isNewConversation = !activeConversation || activeConversation.parts.length === 0;
 
   // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {
@@ -29,7 +31,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   }, [activeConversation, scrollContainerRef]);
 
   // Show new conversation welcome message
-  if (isNewConversationMode && !activeConversation) {
+  if (isNewConversation && !activeConversation) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center max-w-lg">
@@ -46,7 +48,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   }
 
   // Show select conversation message when no conversation is selected and not in new mode
-  if (!activeConversation && !isNewConversationMode) {
+  if (!activeConversation && !isNewConversation) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">

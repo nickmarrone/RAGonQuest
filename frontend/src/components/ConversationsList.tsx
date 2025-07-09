@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { conversationsAtom, activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
+import { useAtom, useAtomValue } from "jotai";
+import { conversationsAtom, activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
 import DropdownMenu from "./DropdownMenu";
@@ -12,7 +12,6 @@ const ConversationsList: React.FC = () => {
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
-  const setIsNewConversationMode = useSetAtom(isNewConversationModeAtom);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
   const { showSuccess, showError } = useToast();
@@ -62,13 +61,11 @@ const ConversationsList: React.FC = () => {
   const handleConversationSelect = async (conversation: Conversation) => {
     setActiveConversation(conversation);
     setConversationParts(conversation.parts);
-    setIsNewConversationMode(false); // Exit new conversation mode
   };
 
   const handleNewConversation = () => {
     setActiveConversation(null);
     setConversationParts([]);
-    setIsNewConversationMode(true);
   };
 
   const handleDeleteConversation = async (conversation: Conversation) => {
@@ -89,7 +86,6 @@ const ConversationsList: React.FC = () => {
       if (activeConversation?.id === conversation.id) {
         setActiveConversation(null);
         setConversationParts([]);
-        setIsNewConversationMode(true);
       }
       
       // Refresh conversations list

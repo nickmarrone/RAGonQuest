@@ -35,14 +35,14 @@ export const dialogAtom = atom<DialogState>({ type: 'none' });
 
 export const openDialogAtom = atom(
   null,
-  (get, set, dialogState: DialogState) => {
+  (_, set, dialogState: DialogState) => {
     set(dialogAtom, dialogState);
   }
 );
 
 export const closeDialogAtom = atom(
   null,
-  (get, set) => {
+  (_, set) => {
     set(dialogAtom, { type: 'none' });
   }
 ); 

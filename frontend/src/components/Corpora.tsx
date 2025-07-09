@@ -9,14 +9,14 @@ import { openDialogAtom, closeDialogAtom } from "../atoms/dialogAtom";
 import type { Corpus } from "../types";
 import type { CostEstimateData } from "./EstimateCostDialog";
 
-const Corpora: React.FC = () => {
+export const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
   const setConversationParts = useSetAtom(conversationPartsAtom);
   const openDialog = useSetAtom(openDialogAtom);
   const closeDialog = useSetAtom(closeDialogAtom);
   const [error, setError] = useState<string | null>(null);
-  const isCreating = useStateValue(false);
+  const [isCreating, _] = useState(false);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
   const [deletingCorpusId, setDeletingCorpusId] = useState<string | null>(null);
@@ -284,9 +284,3 @@ const Corpora: React.FC = () => {
     </div>
   );
 };
-
-export default Corpora;
-function useStateValue(arg0: boolean) {
-  throw new Error("Function not implemented.");
-}
-

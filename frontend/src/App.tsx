@@ -1,7 +1,7 @@
 import './App.css'
 import { useRef, useEffect } from 'react';
 import { useAtom } from 'jotai';
-import Corpora from './components/Corpora';
+import { Corpora } from './components/Corpora';
 import ConversationsList from './components/ConversationsList';
 import ConversationInput from './components/ConversationInput';
 import { conversationPartsAtom } from './atoms/conversationsAtoms';

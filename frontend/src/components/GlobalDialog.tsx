@@ -1,13 +1,13 @@
 import React from 'react';
-import { useAtom, useSetAtom } from 'jotai';
-import { dialogAtom, closeDialogAtom, type DialogState } from '../atoms/dialogAtom';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { dialogAtom, closeDialogAtom } from '../atoms/dialogAtom';
 import CreateCorpusDialog from './CreateCorpusDialog';
 import DeleteCorpusDialog from './DeleteCorpusDialog';
 import EstimateCostDialog from './EstimateCostDialog';
 import ContextChunksDialog from './ContextChunksDialog';
 
 const GlobalDialog: React.FC = () => {
-  const [dialogState] = useAtom(dialogAtom);
+  const dialogState = useAtomValue(dialogAtom);
   const closeDialog = useSetAtom(closeDialogAtom);
 
   const handleClose = () => {

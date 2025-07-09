@@ -3,8 +3,7 @@ import { useAtom } from "jotai";
 import { 
   activeConversationAtom, 
   conversationPartsAtom, 
-  isContinuingConversationAtom,
-  isNewConversationModeAtom
+  isContinuingConversationAtom
 } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 
@@ -13,9 +12,11 @@ const ConversationInput: React.FC = () => {
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [, setConversationParts] = useAtom(conversationPartsAtom);
   const [isContinuing, setIsContinuing] = useAtom(isContinuingConversationAtom);
-  const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // Detect if this is a new conversation (no active conversation or no parts)
+  const isNewConversation = !activeConversation || activeConversation.parts.length === 0;
 
   // Load conversation parts when active conversation changes
   useEffect(() => {
@@ -32,7 +33,7 @@ const ConversationInput: React.FC = () => {
     }
 
     // For existing conversations, we need an active conversation
-    if (!isNewConversationMode && !activeConversation) {
+    if (!isNewConversation && !activeConversation) {
       return;
     }
 
@@ -42,7 +43,7 @@ const ConversationInput: React.FC = () => {
     try {
       let response;
       
-      if (isNewConversationMode) {
+      if (isNewConversation) {
         // Create a new conversation
         response = await fetch(
           `/corpora/${activeCorpus.id}/conversations`,
@@ -105,7 +106,7 @@ const ConversationInput: React.FC = () => {
   };
 
   // Show input if we have an active conversation OR if we're in new conversation mode with a corpus selected
-  if (!activeConversation && !isNewConversationMode) {
+  if (!activeConversation && !isNewConversation) {
     return null;
   }
 
@@ -118,7 +119,7 @@ const ConversationInput: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isNewConversationMode ? "Ask your first question..." : "Ask a follow-up question..."}
+              placeholder={isNewConversation ? "Ask your first question..." : "Ask a follow-up question..."}
               disabled={isContinuing}
               className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               rows={2}
