@@ -10,27 +10,25 @@ import DeleteCorpusDialog from "./DeleteCorpusDialog";
 import DropdownMenu from "./DropdownMenu";
 import ListContainer from "./ListContainer";
 
+type DialogState = 
+  | { type: 'none' }
+  | { type: 'create'; editingCorpus?: Corpus }
+  | { type: 'cost'; corpus: Corpus; data?: CostEstimateData; loading: boolean; error?: string }
+  | { type: 'delete'; corpus: Corpus; loading: boolean };
+
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
   const setActiveConversation = useSetAtom(activeConversationAtom);
   const setConversationParts = useSetAtom(conversationPartsAtom);
   const setIsNewConversationMode = useSetAtom(isNewConversationModeAtom);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogState, setDialogState] = useState<DialogState>({ type: 'none' });
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editingCorpus, setEditingCorpus] = useState<Corpus | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [costDialogOpen, setCostDialogOpen] = useState(false);
-  const [costDialogLoading, setCostDialogLoading] = useState(false);
-  const [costDialogError, setCostDialogError] = useState<string | null>(null);
-  const [costDialogData, setCostDialogData] = useState<CostEstimateData | undefined>(undefined);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingCorpus, setDeletingCorpus] = useState<Corpus | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -70,8 +68,11 @@ const Corpora: React.FC = () => {
 
   const openCorpusDialog = (corpus?: Corpus) => {
     setError(null);
-    setEditingCorpus(corpus || null);
-    setIsDialogOpen(true);
+    setDialogState({ type: 'create', editingCorpus: corpus || undefined });
+  };
+
+  const closeDialog = () => {
+    setDialogState({ type: 'none' });
   };
 
   const handleScanCorpus = async (corpus: Corpus) => {
@@ -96,10 +97,7 @@ const Corpora: React.FC = () => {
   };
 
   const handleEstimateCost = async (corpus: Corpus) => {
-    setCostDialogOpen(true);
-    setCostDialogLoading(true);
-    setCostDialogError(null);
-    setCostDialogData(undefined);
+    setDialogState({ type: 'cost', corpus, loading: true, error: undefined, data: undefined });
     setOpenDropdown(null);
     try {
       const response = await fetch(`/corpora/${corpus.id}/cost_estimate`);
@@ -108,11 +106,14 @@ const Corpora: React.FC = () => {
         throw new Error(errorData.detail || 'Failed to fetch cost estimate');
       }
       const data = await response.json();
-      setCostDialogData(data);
+      setDialogState({ type: 'cost', corpus, loading: false, data });
     } catch (error) {
-      setCostDialogError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setCostDialogLoading(false);
+      setDialogState({ 
+        type: 'cost', 
+        corpus, 
+        loading: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   };
 
@@ -138,18 +139,17 @@ const Corpora: React.FC = () => {
   };
 
   const handleDeleteCorpus = (corpus: Corpus) => {
-    setDeletingCorpus(corpus);
-    setDeleteDialogOpen(true);
+    setDialogState({ type: 'delete', corpus, loading: false });
     setOpenDropdown(null);
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingCorpus) return;
+    if (dialogState.type !== 'delete') return;
     
-    setIsDeleting(true);
+    setDialogState({ ...dialogState, loading: true });
     setError(null);
     try {
-      const response = await fetch(`/corpora/${deletingCorpus.id}`, {
+      const response = await fetch(`/corpora/${dialogState.corpus.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -158,12 +158,11 @@ const Corpora: React.FC = () => {
       }
       
       // Close dialog and refresh corpora list
-      setDeleteDialogOpen(false);
-      setDeletingCorpus(null);
+      closeDialog();
       fetchCorpora();
       
       // Clear active corpus if it was the one being deleted
-      if (activeCorpus?.id === deletingCorpus.id) {
+      if (activeCorpus?.id === dialogState.corpus.id) {
         setActiveCorpus(null);
         clearConversation();
       }
@@ -172,13 +171,12 @@ const Corpora: React.FC = () => {
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
-      setIsDeleting(false);
+      setDialogState({ ...dialogState, loading: false });
     }
   };
 
   const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setDeletingCorpus(null);
+    closeDialog();
   };
 
   const renderCorpusItem = (corpus: Corpus) => (
@@ -281,40 +279,46 @@ const Corpora: React.FC = () => {
         onNewClick={() => openCorpusDialog()}
         newButtonDisabled={isCreating}
         newButtonLoading={isCreating}
-        newButtonText={isCreating ? (editingCorpus?.id ? "Updating..." : "Creating...") : "New"}
+        newButtonText={isCreating ? (dialogState.type === 'create' && dialogState.editingCorpus?.id ? "Updating..." : "Creating...") : "New"}
       />
 
-      <CreateCorpusDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onSuccess={(updatedCorpus) => {
-          setIsDialogOpen(false);
-          fetchCorpora();
-          // Update active corpus if it was the one being edited or just created
-          if (editingCorpus?.id && activeCorpus?.id === editingCorpus.id) {
-            setActiveCorpus(updatedCorpus);
-          } else if (!editingCorpus?.id) {
-            setActiveCorpus(updatedCorpus);
-          }
-        }}
-        initialData={editingCorpus || undefined}
-      />
+      {dialogState.type === 'create' && (
+        <CreateCorpusDialog
+          isOpen={dialogState.type === 'create'}
+          onClose={closeDialog}
+          onSuccess={(updatedCorpus) => {
+            closeDialog();
+            fetchCorpora();
+            // Update active corpus if it was the one being edited or just created
+            if (dialogState.editingCorpus?.id && activeCorpus?.id === dialogState.editingCorpus.id) {
+              setActiveCorpus(updatedCorpus);
+            } else if (!dialogState.editingCorpus?.id) {
+              setActiveCorpus(updatedCorpus);
+            }
+          }}
+          initialData={dialogState.editingCorpus || undefined}
+        />
+      )}
 
-      <EstimateCostDialog
-        isOpen={costDialogOpen}
-        onClose={() => setCostDialogOpen(false)}
-        costData={costDialogData}
-        loading={costDialogLoading}
-        error={costDialogError}
-      />
+      {dialogState.type === 'cost' && (
+        <EstimateCostDialog
+          isOpen={dialogState.type === 'cost'}
+          onClose={closeDialog}
+          costData={dialogState.data}
+          loading={dialogState.loading}
+          error={dialogState.error}
+        />
+      )}
 
-      <DeleteCorpusDialog
-        isOpen={deleteDialogOpen}
-        onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-        corpus={deletingCorpus}
-        isLoading={isDeleting}
-      />
+      {dialogState.type === 'delete' && (
+        <DeleteCorpusDialog
+          isOpen={dialogState.type === 'delete'}
+          onClose={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+          corpus={dialogState.corpus}
+          isLoading={dialogState.loading}
+        />
+      )}
 
       {/* Toast notification */}
       {toast && (
