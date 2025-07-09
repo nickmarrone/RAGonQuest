@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useAtom } from "jotai";
-import { 
-  activeConversationAtom, 
-  conversationPartsAtom, 
-  isContinuingConversationAtom
-} from "../atoms/conversationsAtoms";
+import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 
 const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [, setConversationParts] = useAtom(conversationPartsAtom);
-  const [isContinuing, setIsContinuing] = useAtom(isContinuingConversationAtom);
+  const [isContinuing, setIsContinuing] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
