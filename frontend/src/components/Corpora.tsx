@@ -4,7 +4,6 @@ import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import type { Corpus } from "../types";
 import CreateCorpusDialog from "./CreateCorpusDialog";
-import type { CorpusFormData } from "./CreateCorpusDialog";
 import EstimateCostDialog from "./EstimateCostDialog";
 import type { CostEstimateData } from "./EstimateCostDialog";
 import DeleteCorpusDialog from "./DeleteCorpusDialog";
@@ -20,7 +19,6 @@ const Corpora: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [editingCorpus, setEditingCorpus] = useState<Corpus | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
@@ -70,51 +68,10 @@ const Corpora: React.FC = () => {
     }
   };
 
-  const openCorpusDialog = (mode: 'create' | 'edit', corpus?: Corpus) => {
+  const openCorpusDialog = (corpus?: Corpus) => {
     setError(null);
-    setDialogMode(mode);
     setEditingCorpus(corpus || null);
     setIsDialogOpen(true);
-  };
-
-  const handleSaveCorpus = async (corpusData: CorpusFormData, mode: 'create' | 'edit') => {
-    setIsCreating(true);
-    try {
-      const url = mode === 'create' ? '/corpora' : `/corpora/${editingCorpus?.id}`;
-      const method = mode === 'create' ? 'POST' : 'PATCH';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(corpusData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to ${mode} corpus`);
-      }
-
-      const updatedCorpus = await response.json();
-      
-      // Close dialog and refresh corpora list
-      setIsDialogOpen(false);
-      fetchCorpora();
-      
-      // Update active corpus if it was the one being edited
-      if (mode === 'edit' && activeCorpus?.id === editingCorpus?.id) {
-        setActiveCorpus(updatedCorpus);
-      } else if (mode === 'create') {
-        // Optionally select the newly created corpus
-        setActiveCorpus(updatedCorpus);
-      }
-    } catch (error) {
-      console.error(`Error ${mode}ing corpus:`, error);
-      setError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setIsCreating(false);
-    }
   };
 
   const handleScanCorpus = async (corpus: Corpus) => {
@@ -248,7 +205,7 @@ const Corpora: React.FC = () => {
               label: "Edit",
               onClick: e => {
                 e.stopPropagation();
-                openCorpusDialog('edit', corpus);
+                openCorpusDialog(corpus);
                 setOpenDropdown(null);
               }
             },
@@ -321,28 +278,26 @@ const Corpora: React.FC = () => {
         items={corpora}
         renderItem={renderCorpusItem}
         getItemKey={(corpus) => corpus.id}
-        onNewClick={() => openCorpusDialog('create')}
+        onNewClick={() => openCorpusDialog()}
         newButtonDisabled={isCreating}
         newButtonLoading={isCreating}
-        newButtonText={isCreating ? (dialogMode === 'create' ? "Creating..." : "Updating...") : "New"}
+        newButtonText={isCreating ? (editingCorpus?.id ? "Updating..." : "Creating...") : "New"}
       />
 
       <CreateCorpusDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        onSave={handleSaveCorpus}
-        isLoading={isCreating}
-        mode={dialogMode}
-        initialData={editingCorpus ? {
-          name: editingCorpus.name,
-          description: editingCorpus.description || "",
-          default_prompt: editingCorpus.default_prompt,
-          qdrant_collection_name: editingCorpus.qdrant_collection_name,
-          path: editingCorpus.path,
-          embedding_model: editingCorpus.embedding_model,
-          completion_model: editingCorpus.completion_model,
-          similarity_threshold: editingCorpus.similarity_threshold,
-        } : undefined}
+        onSuccess={(updatedCorpus) => {
+          setIsDialogOpen(false);
+          fetchCorpora();
+          // Update active corpus if it was the one being edited or just created
+          if (editingCorpus?.id && activeCorpus?.id === editingCorpus.id) {
+            setActiveCorpus(updatedCorpus);
+          } else if (!editingCorpus?.id) {
+            setActiveCorpus(updatedCorpus);
+          }
+        }}
+        initialData={editingCorpus || undefined}
       />
 
       <EstimateCostDialog
