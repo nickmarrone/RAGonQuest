@@ -1,23 +1,43 @@
 import { useSetAtom } from 'jotai';
-import { toastAtom, type Toast } from '../atoms/toastAtom';
+import { toastsAtom, type Toast } from '../atoms/toastAtom';
 
 export const useToast = () => {
-  const setToast = useSetAtom(toastAtom);
+  const setToasts = useSetAtom(toastsAtom);
+
+  const addToast = (message: string, type: Toast['type'] = 'success', duration?: number) => {
+    const newToast: Toast = {
+      id: Math.random().toString(36).substr(2, 9),
+      message,
+      type,
+      duration,
+      createdAt: Date.now(),
+    };
+
+    setToasts(prevToasts => {
+      // Keep only the last 4 toasts (max 5 total with new one)
+      const limitedToasts = prevToasts.slice(-4);
+      return [...limitedToasts, newToast];
+    });
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+  };
 
   const showToast = (message: string, type: Toast['type'] = 'success', duration?: number) => {
-    setToast({ message, type, duration });
+    addToast(message, type, duration);
   };
 
   const showSuccess = (message: string, duration?: number) => {
-    showToast(message, 'success', duration);
+    addToast(message, 'success', duration);
   };
 
   const showError = (message: string, duration?: number) => {
-    showToast(message, 'error', duration);
+    addToast(message, 'error', duration);
   };
 
   const showInfo = (message: string, duration?: number) => {
-    showToast(message, 'info', duration);
+    addToast(message, 'info', duration);
   };
 
   return {
@@ -25,5 +45,6 @@ export const useToast = () => {
     showSuccess,
     showError,
     showInfo,
+    removeToast,
   };
 }; 

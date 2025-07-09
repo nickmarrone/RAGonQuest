@@ -56,19 +56,29 @@ const MyComponent = () => {
 
 ## Features
 
-- **Global Management**: Only one toast can be shown at a time
+- **Multiple Toasts**: Up to 5 toasts can be shown simultaneously
+- **Smooth Animations**: Toasts fade in from the right and fade out when dismissed
 - **Auto-dismiss**: Toasts automatically disappear after 3 seconds (configurable)
 - **Manual Dismiss**: Users can click the × button to dismiss early
+- **Stacked Layout**: New toasts appear at the top, pushing existing ones down with proper spacing
 - **Consistent Styling**: All toasts use the same design system
 - **Type Safety**: Full TypeScript support
 
 ## Implementation Details
 
-- **Atom**: `toastAtom` in `src/atoms/toastAtom.ts`
-- **Component**: `Toast` in `src/components/Toast.tsx`
-- **Hook**: `useToast` in `src/hooks/useToast.ts`
+- **Atom**: `toastsAtom` in `src/atoms/toastAtom.ts` (manages array of toasts)
+- **Component**: `Toast` in `src/components/Toast.tsx` (renders multiple toast items)
+- **Hook**: `useToast` in `src/hooks/useToast.ts` (provides toast management functions)
 - **Global Mount**: Added to `App.tsx`
 
 ## Migration from Old System
 
-The old toast system had duplicate code in `ConversationsList` and `Corpora` components. This has been replaced with the centralized system above. 
+The old toast system had duplicate code in `ConversationsList` and `Corpora` components. This has been replaced with the centralized system above.
+
+## Animation Behavior
+
+- **Fade In**: New toasts slide in from the right with opacity transition
+- **Fade Out**: Toasts fade out smoothly when dismissed or timed out
+- **Stacking**: New toasts appear at the top, each positioned 80px below the previous one
+- **Independent Timeouts**: Each toast maintains its own timeout duration regardless of new toasts
+- **Maximum**: System limits to 5 simultaneous toasts, removing oldest when limit exceeded 

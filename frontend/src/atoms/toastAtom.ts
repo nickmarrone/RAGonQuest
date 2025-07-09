@@ -1,9 +1,11 @@
 import { atom } from 'jotai';
 
 export interface Toast {
+  id: string;
   message: string;
   type?: 'success' | 'error' | 'info';
   duration?: number;
+  createdAt: number;
 }
 
-export const toastAtom = atom<Toast | null>(null); 
+export const toastsAtom = atom<Toast[]>([]); 
