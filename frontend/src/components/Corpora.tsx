@@ -24,7 +24,7 @@ export const Corpora: React.FC = () => {
   const { showSuccess } = useToast();
 
   const fetchCorpora = () => {
-    fetch('/corpora')
+    fetch('/corpora/')
       .then(response => response.json())
       .then(data => setCorpora(data))
       .catch(error => {

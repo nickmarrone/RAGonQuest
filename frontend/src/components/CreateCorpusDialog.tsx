@@ -86,7 +86,7 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
     setIsLoading(true);
     setApiError(null);
     try {
-      const url = isEditMode ? `/corpora/${initialData?.id}` : '/corpora';
+      const url = isEditMode ? `/corpora/${initialData?.id}` : '/corpora/';
       const method = isEditMode ? 'PATCH' : 'POST';
       const response = await fetch(url, {
         method,
