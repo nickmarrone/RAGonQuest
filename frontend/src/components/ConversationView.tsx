@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useAtom } from "jotai";
+import React, { useEffect } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import { openDialogAtom } from "../atoms/dialogAtom";
@@ -9,14 +9,12 @@ interface ConversationViewProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-
-
 const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
-  const [activeConversation] = useAtom(activeConversationAtom);
-  const [conversationParts] = useAtom(conversationPartsAtom);
-  const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
-  const [activeCorpus] = useAtom(activeCorpusAtom);
-  const [, openDialog] = useAtom(openDialogAtom);
+  const activeConversation = useAtomValue(activeConversationAtom);
+  const conversationParts = useAtomValue(conversationPartsAtom);
+  const isNewConversationMode = useAtomValue(isNewConversationModeAtom);
+  const activeCorpus = useAtomValue(activeCorpusAtom);
+  const openDialog = useSetAtom(openDialogAtom);
 
   // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { conversationsAtom, activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
@@ -8,11 +8,11 @@ import ListContainer from "./ListContainer";
 import { useToast } from "../hooks/useToast";
 
 const ConversationsList: React.FC = () => {
-  const [activeCorpus] = useAtom(activeCorpusAtom);
+  const activeCorpus = useAtomValue(activeCorpusAtom);
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
-  const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
+  const setIsNewConversationMode = useSetAtom(isNewConversationModeAtom);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
   const { showSuccess, showError } = useToast();
@@ -70,10 +70,6 @@ const ConversationsList: React.FC = () => {
     setConversationParts([]);
     setIsNewConversationMode(true);
   };
-
-
-
-
 
   const handleDeleteConversation = async (conversation: Conversation) => {
     setDeletingConversationId(conversation.id);

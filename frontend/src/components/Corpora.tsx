@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 import { conversationPartsAtom } from "../atoms/conversationsAtoms";
 import { useToast } from "../hooks/useToast";
@@ -12,15 +12,16 @@ import type { CostEstimateData } from "./EstimateCostDialog";
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
-  const [, setConversationParts] = useAtom(conversationPartsAtom);
-  const { showSuccess, showError } = useToast();
+  const setConversationParts = useSetAtom(conversationPartsAtom);
+  const openDialog = useSetAtom(openDialogAtom);
+  const closeDialog = useSetAtom(closeDialogAtom);
   const [error, setError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const isCreating = useStateValue(false);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
+  const [deletingCorpusId, setDeletingCorpusId] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [, openDialog] = useAtom(openDialogAtom);
-  const [, closeDialog] = useAtom(closeDialogAtom);
+  const { showSuccess } = useToast();
 
   const fetchCorpora = () => {
     fetch('/corpora')
@@ -143,51 +144,35 @@ const Corpora: React.FC = () => {
       type: 'delete-corpus',
       props: {
         corpus,
-        isLoading: false,
+        isLoading: deletingCorpusId === corpus.id,
         onConfirm: async () => {
-          openDialog({
-            type: 'delete-corpus',
-            props: {
-              corpus,
-              isLoading: true,
-              onConfirm: async () => {
-                setError(null);
-                try {
-                  const response = await fetch(`/corpora/${corpus.id}`, {
-                    method: 'DELETE',
-                  });
-                  if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Failed to delete corpus');
-                  }
-                  
-                  // Close dialog and refresh corpora list
-                  closeDialog();
-                  fetchCorpora();
-                  
-                  // Clear active corpus if it was the one being deleted
-                  if (activeCorpus?.id === corpus.id) {
-                    setActiveCorpus(null);
-                    setConversationParts([]);
-                  }
-                  
-                  showSuccess('Corpus deleted successfully!');
-                } catch (error) {
-                  setError(error instanceof Error ? error.message : 'Unknown error');
-                  openDialog({
-                    type: 'delete-corpus',
-                    props: {
-                      corpus,
-                      isLoading: false,
-                      onConfirm: async () => {
-                        // Retry logic could go here
-                      }
-                    }
-                  });
-                }
-              }
+          setDeletingCorpusId(corpus.id);
+          setError(null);
+          try {
+            const response = await fetch(`/corpora/${corpus.id}`, {
+              method: 'DELETE',
+            });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.detail || 'Failed to delete corpus');
             }
-          });
+            
+            // Close dialog and refresh corpora list
+            closeDialog();
+            fetchCorpora();
+            
+            // Clear active corpus if it was the one being deleted
+            if (activeCorpus?.id === corpus.id) {
+              setActiveCorpus(null);
+              setConversationParts([]);
+            }
+            
+            showSuccess('Corpus deleted successfully!');
+          } catch (error) {
+            setError(error instanceof Error ? error.message : 'Unknown error');
+          } finally {
+            setDeletingCorpusId(null);
+          }
         }
       }
     });
@@ -301,3 +286,7 @@ const Corpora: React.FC = () => {
 };
 
 export default Corpora;
+function useStateValue(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+
