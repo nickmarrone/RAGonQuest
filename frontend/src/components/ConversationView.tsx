@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
+import { activeConversationAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import { openDialogAtom } from "../atoms/dialogAtom";
 import type { ConversationPart } from "../types";
@@ -10,9 +10,8 @@ interface ConversationViewProps {
 }
 
 const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
-  const activeConversation = useAtomValue(activeConversationAtom);
-  const conversationParts = useAtomValue(conversationPartsAtom);
   const activeCorpus = useAtomValue(activeCorpusAtom);
+  const activeConversation = useAtomValue(activeConversationAtom);
   const openDialog = useSetAtom(openDialogAtom);
 
   // Detect if this is a new conversation (no active conversation selected)
@@ -57,7 +56,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
 
       <div className="flex justify-center w-full">
         <div className="space-y-10 w-full max-w-4xl mx-auto">
-          {conversationParts.map((part: ConversationPart) => (
+          {activeConversation.parts.map((part: ConversationPart) => (
             <div key={part.id} className="flex flex-col gap-8 py-2">
               {/* User Query Bubble (right aligned) */}
               <div className="flex justify-end">
@@ -101,7 +100,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
         </div>
       </div>
 
-      {conversationParts.length === 0 && activeConversation && (
+      {activeConversation && activeConversation.parts.length === 0 && (
         <div className="text-center text-zinc-400">
           <p>No conversation parts found.</p>
         </div>
