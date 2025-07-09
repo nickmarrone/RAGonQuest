@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import type { Corpus } from "../types";
@@ -14,9 +14,9 @@ import ListContainer from "./ListContainer";
 const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
-  const [, setActiveConversation] = useAtom(activeConversationAtom);
-  const [, setConversationParts] = useAtom(conversationPartsAtom);
-  const [, setIsNewConversationMode] = useAtom(isNewConversationModeAtom);
+  const setActiveConversation = useSetAtom(activeConversationAtom);
+  const setConversationParts = useSetAtom(conversationPartsAtom);
+  const setIsNewConversationMode = useSetAtom(isNewConversationModeAtom);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,36 +56,32 @@ const Corpora: React.FC = () => {
   }, [setCorpora]);
 
 
+  const clearConversation = () => {
+    setActiveConversation(null);
+    setConversationParts([]);
+    setIsNewConversationMode(true);
+  };
 
   const handleCorpusSelect = (corpus: Corpus) => {
     // Only clear conversations if the corpus actually changes
     if (activeCorpus?.id !== corpus.id) {
       setActiveCorpus(corpus);
-      setActiveConversation(null);
-      setConversationParts([]);
-      setIsNewConversationMode(true); // Start new conversation mode
+      clearConversation();
     }
   };
 
-  const handleNewCorpus = () => {
+  const openCorpusDialog = (mode: 'create' | 'edit', corpus?: Corpus) => {
     setError(null);
-    setDialogMode('create');
-    setEditingCorpus(null);
+    setDialogMode(mode);
+    setEditingCorpus(corpus || null);
     setIsDialogOpen(true);
   };
 
-  const handleEditCorpus = (corpus: Corpus) => {
-    setError(null);
-    setDialogMode('edit');
-    setEditingCorpus(corpus);
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveCorpus = async (corpusData: CorpusFormData) => {
+  const handleSaveCorpus = async (corpusData: CorpusFormData, mode: 'create' | 'edit') => {
     setIsCreating(true);
     try {
-      const url = dialogMode === 'create' ? '/corpora' : `/corpora/${editingCorpus?.id}`;
-      const method = dialogMode === 'create' ? 'POST' : 'PATCH';
+      const url = mode === 'create' ? '/corpora' : `/corpora/${editingCorpus?.id}`;
+      const method = mode === 'create' ? 'POST' : 'PATCH';
       
       const response = await fetch(url, {
         method,
@@ -97,7 +93,7 @@ const Corpora: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to ${dialogMode} corpus`);
+        throw new Error(errorData.detail || `Failed to ${mode} corpus`);
       }
 
       const updatedCorpus = await response.json();
@@ -107,14 +103,14 @@ const Corpora: React.FC = () => {
       fetchCorpora();
       
       // Update active corpus if it was the one being edited
-      if (dialogMode === 'edit' && activeCorpus?.id === editingCorpus?.id) {
+      if (mode === 'edit' && activeCorpus?.id === editingCorpus?.id) {
         setActiveCorpus(updatedCorpus);
-      } else if (dialogMode === 'create') {
+      } else if (mode === 'create') {
         // Optionally select the newly created corpus
         setActiveCorpus(updatedCorpus);
       }
     } catch (error) {
-      console.error(`Error ${dialogMode}ing corpus:`, error);
+      console.error(`Error ${mode}ing corpus:`, error);
       setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsCreating(false);
@@ -212,9 +208,7 @@ const Corpora: React.FC = () => {
       // Clear active corpus if it was the one being deleted
       if (activeCorpus?.id === deletingCorpus.id) {
         setActiveCorpus(null);
-        setActiveConversation(null);
-        setConversationParts([]);
-        setIsNewConversationMode(true);
+        clearConversation();
       }
       
       showToast('Corpus deleted successfully!');
@@ -254,7 +248,7 @@ const Corpora: React.FC = () => {
               label: "Edit",
               onClick: e => {
                 e.stopPropagation();
-                handleEditCorpus(corpus);
+                openCorpusDialog('edit', corpus);
                 setOpenDropdown(null);
               }
             },
@@ -327,7 +321,7 @@ const Corpora: React.FC = () => {
         items={corpora}
         renderItem={renderCorpusItem}
         getItemKey={(corpus) => corpus.id}
-        onNewClick={handleNewCorpus}
+        onNewClick={() => openCorpusDialog('create')}
         newButtonDisabled={isCreating}
         newButtonLoading={isCreating}
         newButtonText={isCreating ? (dialogMode === 'create' ? "Creating..." : "Updating...") : "New"}
