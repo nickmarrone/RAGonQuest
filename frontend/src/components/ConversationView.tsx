@@ -15,8 +15,8 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   const activeCorpus = useAtomValue(activeCorpusAtom);
   const openDialog = useSetAtom(openDialogAtom);
 
-  // Detect if this is a new conversation (no active conversation or no parts)
-  const isNewConversation = !activeConversation || activeConversation.parts.length === 0;
+  // Detect if this is a new conversation (no active conversation selected)
+  const isNewConversation = !activeConversation;
 
   // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {
@@ -31,7 +31,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   }, [activeConversation, scrollContainerRef]);
 
   // Show new conversation welcome message
-  if (isNewConversation && !activeConversation) {
+  if (isNewConversation) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center max-w-lg">
@@ -42,18 +42,6 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
           <p className="text-zinc-500">
             Ask your first question below to begin the conversation.
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show select conversation message when no conversation is selected and not in new mode
-  if (!activeConversation && !isNewConversation) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4 text-zinc-400">Select a Conversation</h1>
-          <p className="text-zinc-500">Choose a conversation from the sidebar to view its content.</p>
         </div>
       </div>
     );
@@ -113,7 +101,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
         </div>
       </div>
 
-      {conversationParts.length === 0 && (
+      {conversationParts.length === 0 && activeConversation && (
         <div className="text-center text-zinc-400">
           <p>No conversation parts found.</p>
         </div>

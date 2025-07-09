@@ -15,13 +15,15 @@ const ConversationInput: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Detect if this is a new conversation (no active conversation or no parts)
-  const isNewConversation = !activeConversation || activeConversation.parts.length === 0;
+  // Detect if this is a new conversation (no active conversation selected)
+  const isNewConversation = !activeConversation;
 
   // Load conversation parts when active conversation changes
   useEffect(() => {
     if (activeConversation && activeConversation.parts) {
       setConversationParts(activeConversation.parts);
+    } else {
+      setConversationParts([]);
     }
   }, [activeConversation, setConversationParts]);
 
@@ -29,11 +31,6 @@ const ConversationInput: React.FC = () => {
     e.preventDefault();
     
     if (!inputValue.trim() || !activeCorpus || isContinuing) {
-      return;
-    }
-
-    // For existing conversations, we need an active conversation
-    if (!isNewConversation && !activeConversation) {
       return;
     }
 
@@ -105,8 +102,8 @@ const ConversationInput: React.FC = () => {
     }
   };
 
-  // Show input if we have an active conversation OR if we're in new conversation mode with a corpus selected
-  if (!activeConversation && !isNewConversation) {
+  // Show input if we have a corpus selected
+  if (!activeCorpus) {
     return null;
   }
 
