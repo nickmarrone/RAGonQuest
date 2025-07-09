@@ -7,7 +7,7 @@ const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
   const [, setConversationParts] = useAtom(conversationPartsAtom);
-  const [isContinuing, setIsContinuing] = useState(false);
+  const [inProgress, setInProgress] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +26,11 @@ const ConversationInput: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!inputValue.trim() || !activeCorpus || isContinuing) {
+    if (!inputValue.trim() || !activeCorpus || inProgress) {
       return;
     }
 
-    setIsContinuing(true);
+    setInProgress(true);
     setError(null);
 
     try {
@@ -82,12 +82,11 @@ const ConversationInput: React.FC = () => {
       
       // Clear the input
       setInputValue("");
-      
     } catch (error) {
       console.error("Error processing conversation:", error);
       setError(error instanceof Error ? error.message : "An error occurred while processing your question");
     } finally {
-      setIsContinuing(false);
+      setInProgress(false);
     }
   };
 
@@ -113,17 +112,17 @@ const ConversationInput: React.FC = () => {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isNewConversation ? "Ask your first question..." : "Ask a follow-up question..."}
-              disabled={isContinuing}
+              disabled={inProgress}
               className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               rows={2}
             />
           </div>
           <button
             type="submit"
-            disabled={!inputValue.trim() || isContinuing}
+            disabled={!inputValue.trim() || inProgress}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2"
           >
-            {isContinuing ? (
+            {inProgress ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 <span>Thinking...</span>
@@ -140,7 +139,7 @@ const ConversationInput: React.FC = () => {
           </div>
         )}
         
-        {isContinuing && (
+        {inProgress && (
           <div className="flex items-center space-x-2 text-zinc-400 text-sm">
             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-zinc-400"></div>
             <span>Processing your question...</span>
