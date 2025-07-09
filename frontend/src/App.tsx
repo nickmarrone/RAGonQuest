@@ -7,6 +7,7 @@ import ConversationInput from './components/ConversationInput';
 import { conversationPartsAtom } from './atoms/conversationsAtoms';
 import ConversationView from './components/ConversationView';
 import Toast from './components/Toast';
+import GlobalDialog from './components/GlobalDialog';
 
 function App() {
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -44,6 +45,8 @@ function App() {
       </div>
       {/* Global Toast */}
       <Toast />
+      {/* Global Dialog */}
+      <GlobalDialog />
     </div>
   );
 }

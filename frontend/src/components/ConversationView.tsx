@@ -2,45 +2,21 @@ import React, { useEffect, useState } from "react";
 import { useAtom } from "jotai";
 import { activeConversationAtom, conversationPartsAtom, isNewConversationModeAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
+import { openDialogAtom } from "../atoms/dialogAtom";
 import type { ConversationPart } from "../types";
-import Dialog from "./Dialog";
 
 interface ConversationViewProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-// Dialog for showing context chunks
-const ContextChunksDialog: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  chunks: string[];
-}> = ({ isOpen, onClose, chunks }) => {
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onCancel={onClose}
-      title="Context"
-      maxWidth="max-w-4xl"
-      showCancelButton={true}
-      cancelButtonLabel="Close"
-    >
-      <div className="space-y-4">
-        {chunks.map((chunk, idx) => (
-          <div key={idx} className="bg-zinc-800 rounded p-3 text-zinc-200 text-sm whitespace-pre-wrap">
-            {chunk}
-          </div>
-        ))}
-      </div>
-    </Dialog>
-  );
-};
+
 
 const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef }) => {
   const [activeConversation] = useAtom(activeConversationAtom);
   const [conversationParts] = useAtom(conversationPartsAtom);
   const [isNewConversationMode] = useAtom(isNewConversationModeAtom);
   const [activeCorpus] = useAtom(activeCorpusAtom);
-  const [openChunksPartId, setOpenChunksPartId] = useState<string | null>(null);
+  const [, openDialog] = useAtom(openDialogAtom);
 
   // Scroll to top when conversation changes (when selecting a new conversation)
   useEffect(() => {
@@ -115,7 +91,14 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
                       <div
                         className="p-2 bg-zinc-800 rounded-full hover:bg-zinc-600 transition-colors shadow cursor-pointer"
                         title="Show context"
-                        onClick={() => setOpenChunksPartId(part.id)}
+                        onClick={() => {
+                          openDialog({
+                            type: 'context-chunks',
+                            props: {
+                              chunks: part.context_chunks
+                            }
+                          });
+                        }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h10M7 11h10M7 15h6M5 5v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2z" />
@@ -124,14 +107,6 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
                     </div>
                   )}
                 </div>
-                {/* Context Chunks Dialog */}
-                {part.context_chunks && part.context_chunks.length > 0 && (
-                  <ContextChunksDialog
-                    isOpen={openChunksPartId === part.id}
-                    onClose={() => setOpenChunksPartId(null)}
-                    chunks={part.context_chunks}
-                  />
-                )}
               </div>
             </div>
           ))}
