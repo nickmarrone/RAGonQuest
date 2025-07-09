@@ -16,11 +16,16 @@ const ConversationsList: React.FC = () => {
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
   const { showSuccess, showError } = useToast();
 
+
+  const clearActiveConversation = () => {
+    setActiveConversation(null);
+    setConversationParts([]);
+  }
+
   const fetchConversations = async () => {
     if (!activeCorpus) {
       setConversations([]);
-      setActiveConversation(null);
-      setConversationParts([]);
+      clearActiveConversation();
       return;
     }
     
@@ -52,6 +57,7 @@ const ConversationsList: React.FC = () => {
   }, [activeCorpus]);
 
   // Refresh conversations when conversation parts change (indicating a new part was added)
+  // TODO: Do we need to refresh if we have the updated part as a response? Do we need to refresh all conversations?
   useEffect(() => {
     if (conversationParts.length > 0) {
       fetchConversations();
@@ -61,11 +67,6 @@ const ConversationsList: React.FC = () => {
   const handleConversationSelect = async (conversation: Conversation) => {
     setActiveConversation(conversation);
     setConversationParts(conversation.parts);
-  };
-
-  const handleNewConversation = () => {
-    setActiveConversation(null);
-    setConversationParts([]);
   };
 
   const handleDeleteConversation = async (conversation: Conversation) => {
@@ -84,8 +85,7 @@ const ConversationsList: React.FC = () => {
       
       // Clear active conversation if it was the one being deleted
       if (activeConversation?.id === conversation.id) {
-        setActiveConversation(null);
-        setConversationParts([]);
+        clearActiveConversation();
       }
       
       // Refresh conversations list
@@ -155,7 +155,7 @@ const ConversationsList: React.FC = () => {
         items={conversations}
         renderItem={renderConversationItem}
         getItemKey={(conv) => conv.id}
-        onNewClick={handleNewConversation}
+        onNewClick={clearActiveConversation}
         className="mt-6"
         titleClassName="text-md font-semibold"
         emptyMessage="No conversations yet."
