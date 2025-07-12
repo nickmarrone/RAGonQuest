@@ -1,61 +1,52 @@
-import React, { useEffect } from "react";
-
-export interface DialogButton {
-  label: string;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  disabled?: boolean;
-  loading?: boolean;
-}
+import React, { useEffect, useState } from "react";
+import Spinner from "./Spinner";
 
 interface DialogProps {
-  isOpen: boolean;
   onCancel: () => void;
   onCommit?: () => void;
   title?: string;
   children: React.ReactNode;
-  buttons?: DialogButton[];
   maxWidth?: string;
   maxHeight?: string;
-  showCancelButton?: boolean;
-  cancelButtonLabel?: string;
   commitButtonLabel?: string;
   commitButtonVariant?: 'primary' | 'danger';
-  commitButtonDisabled?: boolean;
-  commitButtonLoading?: boolean;
+  showCancelButton?: boolean;
+  cancelButtonLabel?: string;
 }
 
 const Dialog: React.FC<DialogProps> = ({
-  isOpen,
   onCancel,
   onCommit,
   title,
   children,
-  buttons,
   maxWidth = "max-w-2xl",
   maxHeight = "max-h-[90vh]",
   showCancelButton = true,
   cancelButtonLabel = "Cancel",
   commitButtonLabel,
   commitButtonVariant = "primary",
-  commitButtonDisabled = false,
-  commitButtonLoading = false,
 }) => {
   // Handle escape key to close dialog
-  useEffect(() => {
-    if (!isOpen) return;
-    
+  useEffect(() => {    
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
     };
     
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onCancel]);
+  }, [onCancel]);
 
-  if (!isOpen) return null;
+  const [isLoading, setIsLoading] = useState(false);
 
-  const getButtonClasses = (variant: DialogButton['variant'] = 'secondary') => {
+  const handleCommit = async () => {
+    if (!onCommit) return;
+
+    setIsLoading(true);
+    await onCommit();
+    setIsLoading(false);
+  };
+
+  const getButtonClasses = (variant: 'primary' | 'secondary' | 'danger') => {
     const baseClasses = "px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
     
     switch (variant) {
@@ -91,42 +82,29 @@ const Dialog: React.FC<DialogProps> = ({
         </div>
 
         {/* Footer with buttons - Fixed */}
-        {(buttons && buttons.length > 0) || onCommit || showCancelButton ? (
-          <div className="flex justify-end space-x-3 p-6 pt-4 flex-shrink-0">
-            {/* Custom buttons */}
-            {buttons && buttons.map((button, index) => (
-              <button
-                key={index}
-                onClick={button.onClick}
-                disabled={button.disabled}
-                className={getButtonClasses(button.variant)}
-              >
-                {button.loading ? "Loading..." : button.label}
-              </button>
-            ))}
-            
-            {/* Cancel button */}
-            {showCancelButton && !buttons?.some(b => b.label === cancelButtonLabel) && (
-              <button
-                onClick={onCancel}
-                className={getButtonClasses("secondary")}
-              >
-                {cancelButtonLabel}
-              </button>
-            )}
-            
-            {/* Commit button */}
-            {onCommit && commitButtonLabel && (
-              <button
-                onClick={onCommit}
-                disabled={commitButtonDisabled}
-                className={getButtonClasses(commitButtonVariant)}
-              >
-                {commitButtonLoading ? "Loading..." : commitButtonLabel}
-              </button>
-            )}
-          </div>
-        ) : null}
+        <div className="flex justify-end space-x-3 p-6 pt-4 flex-shrink-0">
+          {/* Cancel button */}
+          {showCancelButton && (
+            <button
+              onClick={onCancel}
+              className={getButtonClasses("secondary")}
+            >
+              {cancelButtonLabel}
+            </button>
+          )}
+          
+          {/* Commit button */}
+          {onCommit && commitButtonLabel && (
+            <button
+              onClick={handleCommit}
+              disabled={isLoading}
+              className={getButtonClasses(commitButtonVariant)}
+            >
+              {isLoading && <Spinner />}
+              {commitButtonLabel}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

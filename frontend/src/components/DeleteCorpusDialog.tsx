@@ -3,37 +3,30 @@ import type { Corpus } from "../types";
 import Dialog from "./Dialog";
 
 interface DeleteCorpusDialogProps {
-  isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>;
+  onCommit: () => Promise<void>;
   corpus: Corpus | null;
-  isLoading: boolean;
 }
 
 const DeleteCorpusDialog: React.FC<DeleteCorpusDialogProps> = ({
-  isOpen,
   onClose,
-  onConfirm,
+  onCommit,
   corpus,
-  isLoading,
 }) => {
   if (!corpus) return null;
 
-  const handleConfirm = async () => {
-    await onConfirm();
+  const handleCommit = async () => {
+    await onCommit();
   };
 
   return (
     <Dialog
-      isOpen={isOpen}
       onCancel={onClose}
-      onCommit={handleConfirm}
+      onCommit={handleCommit}
       title="Delete Corpus"
       maxWidth="max-w-md"
-      commitButtonLabel={isLoading ? "Deleting..." : "Delete"}
+      commitButtonLabel="Delete"
       commitButtonVariant="danger"
-      commitButtonDisabled={isLoading}
-      commitButtonLoading={isLoading}
     >
       <p className="text-zinc-300">
         Are you sure you want to delete <span className="font-semibold text-white">"{corpus.name}"</span>? 

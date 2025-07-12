@@ -2,19 +2,16 @@ import React from "react";
 import Dialog from "./Dialog";
 
 interface ContextChunksDialogProps {
-  isOpen: boolean;
   onClose: () => void;
   chunks: string[];
 }
 
 const ContextChunksDialog: React.FC<ContextChunksDialogProps> = ({
-  isOpen,
   onClose,
   chunks,
 }) => {
   return (
     <Dialog
-      isOpen={isOpen}
       onCancel={onClose}
       title="Context"
       maxWidth="max-w-4xl"
