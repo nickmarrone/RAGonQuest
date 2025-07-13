@@ -7,6 +7,7 @@ import DropdownMenu from "./DropdownMenu";
 import { openDialogAtom, closeDialogAtom } from "../atoms/dialogAtom";
 import type { Corpus } from "../types";
 import type { CostEstimateData } from "./EstimateCostDialog";
+import api from "../utils/api";
 
 export const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
@@ -20,14 +21,13 @@ export const Corpora: React.FC = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const { showSuccess } = useToast();
 
-  const fetchCorpora = () => {
-    fetch('/corpora/')
-      .then(response => response.json())
-      .then(data => setCorpora(data))
-      .catch(error => {
-        console.error('Error fetching corpora:', error);
-        setError('Failed to fetch corpora');
-      });
+  const fetchCorpora = async () => {
+    try {
+      const response = await api.get('/corpora/');
+      setCorpora(response.data);
+    } catch (error) {
+      setError('Failed to fetch corpora');
+    }
   };
 
   useEffect(() => {
@@ -61,13 +61,7 @@ export const Corpora: React.FC = () => {
     setScanningCorpusId(corpus.id);
     setError(null);
     try {
-      const response = await fetch(`/corpora/${corpus.id}/scan`, {
-        method: 'POST',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to scan corpus');
-      }
+      await api.post(`/corpora/${corpus.id}/scan`);
       fetchCorpora();
       showSuccess('Scan complete!');
     } catch (error) {
@@ -81,12 +75,8 @@ export const Corpora: React.FC = () => {
   const handleEstimateCost = async (corpus: Corpus) => {
     setError(null);
     try {
-      const response = await fetch(`/corpora/${corpus.id}/cost_estimate`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to estimate cost');
-      }
-      const costData: CostEstimateData = await response.json();
+      const response = await api.get(`/corpora/${corpus.id}/cost_estimate`);
+      const costData: CostEstimateData = response.data;
       
       openDialog({
         type: 'estimate-cost',
@@ -114,13 +104,7 @@ export const Corpora: React.FC = () => {
     setIngestingCorpusId(corpus.id);
     setError(null);
     try {
-      const response = await fetch(`/corpora/${corpus.id}/ingest`, {
-        method: 'POST',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to ingest corpus files');
-      }
+      await api.post(`/corpora/${corpus.id}/ingest`);
       fetchCorpora();
       showSuccess('Ingestion complete!');
     } catch (error) {
@@ -141,13 +125,7 @@ export const Corpora: React.FC = () => {
           setDeletingCorpusId(corpus.id);
           setError(null);
           try {
-            const response = await fetch(`/corpora/${corpus.id}`, {
-              method: 'DELETE',
-            });
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.detail || 'Failed to delete corpus');
-            }
+            await api.delete(`/corpora/${corpus.id}`);
             
             // Close dialog and refresh corpora list
             closeDialog();

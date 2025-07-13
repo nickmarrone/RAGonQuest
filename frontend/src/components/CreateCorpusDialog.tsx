@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Dialog from "./Dialog";
 import type { Corpus } from "../types";
+import api from "../utils/api";
 
 interface CreateCorpusDialogProps {
   onClose: () => void;
@@ -80,19 +81,13 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
     if (!validateForm()) return;
     setApiError(null);
     try {
-      const url = isEditMode ? `/corpora/${initialData?.id}` : '/corpora/';
-      const method = isEditMode ? 'PATCH' : 'POST';
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to ${isEditMode ? 'update' : 'create'} corpus`);
+      if (isEditMode) {
+        const response = await api.patch(`/corpora/${initialData?.id}`, formData);
+        onSuccess(response.data);
+      } else {
+        const response = await api.post('/corpora/', formData);
+        onSuccess(response.data);
       }
-      const updatedCorpus = await response.json();
-      onSuccess(updatedCorpus);
     } catch (error) {
       setApiError(error instanceof Error ? error.message : 'Unknown error');
     }

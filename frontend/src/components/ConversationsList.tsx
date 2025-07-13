@@ -6,6 +6,7 @@ import type { Conversation } from "../types";
 import DropdownMenu from "./DropdownMenu";
 import ListContainer from "./ListContainer";
 import { useToast } from "../hooks/useToast";
+import api from "../utils/api";
 
 const ConversationsList: React.FC = () => {
   const activeCorpus = useAtomValue(activeCorpusAtom);
@@ -28,8 +29,8 @@ const ConversationsList: React.FC = () => {
     }
     
     try {
-      const response = await fetch(`/corpora/${activeCorpus.id}/conversations`);
-      const data: Conversation[] = await response.json();
+      const response = await api.get(`/corpora/${activeCorpus.id}/conversations`);
+      const data: Conversation[] = response.data;
       
       // Sort by created_at descending
       const sorted = [...data].sort(
@@ -70,14 +71,7 @@ const ConversationsList: React.FC = () => {
     setOpenDropdown(null);
     
     try {
-      const response = await fetch(`/corpora/${activeCorpus!.id}/conversations/${conversation.id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to delete conversation');
-      }
+      await api.delete(`/corpora/${activeCorpus!.id}/conversations/${conversation.id}`);
       
       // Clear active conversation if it was the one being deleted
       if (activeConversation?.id === conversation.id) {

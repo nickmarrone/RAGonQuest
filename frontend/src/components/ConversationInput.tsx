@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAtom } from "jotai";
 import { activeConversationAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
+import api from "../utils/api";
 
 const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
@@ -28,46 +29,21 @@ const ConversationInput: React.FC = () => {
       
       if (isNewConversation) {
         // Create a new conversation
-        response = await fetch(
-          `/corpora/${activeCorpus.id}/conversations`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              query: inputValue.trim(),
-              title: inputValue.trim().substring(0, 100), // Use first 100 chars as title
-              limit: 25,
-            }),
-          }
-        );
+        response = await api.post(`/corpora/${activeCorpus.id}/conversations`, {
+          query: inputValue.trim(),
+          title: inputValue.trim().substring(0, 100), // Use first 100 chars as title
+          limit: 25,
+        });
       } else {
         // Continue existing conversation
-        response = await fetch(
-          `/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              query: inputValue.trim(),
-              limit: 25,
-            }),
-          }
-        );
+        response = await api.post(`/corpora/${activeCorpus.id}/conversations/${activeConversation!.id}/continue`, {
+          query: inputValue.trim(),
+          limit: 25,
+        });
       }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      const updatedConversation = await response.json();
-      
       // Update the conversation
-      setActiveConversation(updatedConversation);
+      setActiveConversation(response.data);
       
       // Clear the input
       setInputValue("");
