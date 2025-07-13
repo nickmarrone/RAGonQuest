@@ -1,33 +1,14 @@
 import './App.css'
-import { useRef, useEffect } from 'react';
-import { useAtomValue } from 'jotai';
-import { Corpora } from './components/Corpora';
+import { useRef } from 'react';
+import Corpora from './components/Corpora';
 import ConversationsList from './components/ConversationsList';
 import ConversationInput from './components/ConversationInput';
-import { activeConversationAtom } from './atoms/conversationsAtoms';
 import ConversationView from './components/ConversationView';
 import Toast from './components/Toast';
 import GlobalDialog from './components/GlobalDialog';
 
 function App() {
-  const mainContentRef = useRef<HTMLDivElement>(null);
-  const activeConversation = useAtomValue(activeConversationAtom);
-
-  // Scroll to bottom when conversation parts change (new part added)
-  useEffect(() => {
-    if (mainContentRef.current && activeConversation?.parts && activeConversation.parts.length > 0) {
-      // Try multiple times with different delays to ensure content is rendered
-      const scrollToBottom = () => {
-        if (mainContentRef.current) {
-          const container = mainContentRef.current;
-          container.scrollTop = container.scrollHeight;
-        }
-      };
-
-      // Delay to ensure content is rendered
-      setTimeout(scrollToBottom, 100);
-    }
-  }, [activeConversation?.parts?.length]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="flex h-screen bg-zinc-900 text-white overflow-hidden">
@@ -38,8 +19,8 @@ function App() {
       </div>
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 p-6 overflow-y-auto" ref={mainContentRef}>
-          <ConversationView scrollContainerRef={mainContentRef} />
+        <div className="flex-1 p-6 overflow-y-auto" ref={scrollContainerRef}>
+          <ConversationView scrollContainerRef={scrollContainerRef} />
         </div>
         <ConversationInput />
       </div>

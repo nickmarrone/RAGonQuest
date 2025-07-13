@@ -17,18 +17,26 @@ const ConversationView: React.FC<ConversationViewProps> = ({ scrollContainerRef 
   // Detect if this is a new conversation (no active conversation selected)
   const isNewConversation = !activeConversation;
 
-  // Scroll to top when conversation changes (when selecting a new conversation)
+  // Scroll to bottom when conversation parts change (new part added)
   useEffect(() => {
-    if (scrollContainerRef.current && activeConversation) {
-      // Add a small delay to ensure content is rendered
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = 0;
-        }
-      }, 50);
+    if (scrollContainerRef.current) {
+      if (activeConversation?.parts && activeConversation.parts.length > 0) {
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+          }
+        }, 50);
+      } else {
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+          }
+        }, 50);
+      }
+      return;
     }
-  }, [activeConversation, scrollContainerRef]);
-
+  }, [activeConversation, activeConversation?.parts?.length, scrollContainerRef]);
+  
   // Show new conversation welcome message
   if (isNewConversation) {
     return (

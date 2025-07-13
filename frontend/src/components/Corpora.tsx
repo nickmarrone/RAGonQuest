@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useAtom, useSetAtom } from "jotai";
-import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 import { useToast } from "../hooks/useToast";
 import ListContainer from "./ListContainer";
 import DropdownMenu from "./DropdownMenu";
+import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
 import { openDialogAtom, closeDialogAtom } from "../atoms/dialogAtom";
 import type { Corpus } from "../types";
 import type { CostEstimateData } from "./EstimateCostDialog";
 import api from "../utils/api";
+import { activeConversationAtom } from "../atoms/conversationsAtoms";
 
-export const Corpora: React.FC = () => {
+const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
+  const setActiveConversation = useSetAtom(activeConversationAtom);
   const openDialog = useSetAtom(openDialogAtom);
   const closeDialog = useSetAtom(closeDialogAtom);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +38,7 @@ export const Corpora: React.FC = () => {
 
   const handleCorpusSelect = (corpus: Corpus) => {
     setActiveCorpus(corpus);
+    setActiveConversation(null);
   };
 
   const openCorpusDialog = (corpus?: Corpus) => {
@@ -252,3 +255,5 @@ export const Corpora: React.FC = () => {
     </div>
   );
 };
+
+export default Corpora;
