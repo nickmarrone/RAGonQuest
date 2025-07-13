@@ -145,7 +145,7 @@ export const Corpora: React.FC = () => {
       props: {
         corpus,
         isLoading: deletingCorpusId === corpus.id,
-        onConfirm: async () => {
+        onCommit: async () => {
           setDeletingCorpusId(corpus.id);
           setError(null);
           try {

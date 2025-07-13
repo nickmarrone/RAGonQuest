@@ -16,7 +16,7 @@ export interface CreateCorpusDialogProps {
 
 export interface DeleteCorpusDialogProps {
   corpus: Corpus;
-  onConfirm: () => Promise<void>;
+  onCommit: () => Promise<void>;
   isLoading: boolean;
 }
 

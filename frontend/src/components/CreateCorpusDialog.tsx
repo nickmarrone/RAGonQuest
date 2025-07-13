@@ -3,7 +3,6 @@ import Dialog from "./Dialog";
 import type { Corpus } from "../types";
 
 interface CreateCorpusDialogProps {
-  isOpen: boolean;
   onClose: () => void;
   onSuccess: (corpus: Corpus) => void;
   initialData?: Corpus;
@@ -32,31 +31,27 @@ function omitFields<T, K extends keyof T>(obj: T, keys: K[]): OmitFields<T, K> {
 }
 
 const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
-  isOpen,
   onClose,
   onSuccess,
   initialData,
 }) => {
   const [formData, setFormData] = useState<CorpusFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<CorpusFormData>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   // Determine if we're in edit mode based on presence of id
   const isEditMode = Boolean(initialData?.id);
 
   useEffect(() => {
-    if (isOpen) {
-      if (isEditMode && initialData) {
-        // Omit read-only fields
-        setFormData(omitFields(initialData, ['id', 'created_at', 'updated_at', 'files']));
-      } else {
-        setFormData(initialFormData);
-      }
-      setErrors({});
-      setApiError(null);
+    if (isEditMode && initialData) {
+      // Omit read-only fields
+      setFormData(omitFields(initialData, ['id', 'created_at', 'updated_at', 'files']));
+    } else {
+      setFormData(initialFormData);
     }
-  }, [isOpen, isEditMode, initialData]);
+    setErrors({});
+    setApiError(null);
+  }, [isEditMode, initialData]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<CorpusFormData> = {};
@@ -83,7 +78,6 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
 
   const handleSave = async () => {
     if (!validateForm()) return;
-    setIsLoading(true);
     setApiError(null);
     try {
       const url = isEditMode ? `/corpora/${initialData?.id}` : '/corpora/';
@@ -101,8 +95,6 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
       onSuccess(updatedCorpus);
     } catch (error) {
       setApiError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -121,14 +113,11 @@ const CreateCorpusDialog: React.FC<CreateCorpusDialogProps> = ({
 
   return (
     <Dialog
-      isOpen={isOpen}
       onCancel={onClose}
       onCommit={handleSave}
       title={isEditMode ? 'Edit Corpus' : 'Create New Corpus'}
-      commitButtonLabel={isLoading ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Corpus" : "Create Corpus")}
+      commitButtonLabel={isEditMode ? "Update Corpus" : "Create Corpus"}
       commitButtonVariant="primary"
-      commitButtonDisabled={isLoading}
-      commitButtonLoading={isLoading}
     >
       {apiError && (
         <div className="mb-2 p-2 bg-red-900 border border-red-700 rounded text-red-200">

@@ -19,7 +19,6 @@ const GlobalDialog: React.FC = () => {
       case 'create-corpus':
         return (
           <CreateCorpusDialog
-            isOpen={true}
             onClose={handleClose}
             onSuccess={dialogState.props?.onSuccess}
             initialData={dialogState.props?.editingCorpus}
@@ -29,18 +28,15 @@ const GlobalDialog: React.FC = () => {
       case 'delete-corpus':
         return (
           <DeleteCorpusDialog
-            isOpen={true}
             onClose={handleClose}
-            onConfirm={dialogState.props?.onConfirm}
+            onCommit={dialogState.props?.onCommit}
             corpus={dialogState.props?.corpus}
-            isLoading={dialogState.props?.isLoading}
           />
         );
       
       case 'estimate-cost':
         return (
           <EstimateCostDialog
-            isOpen={true}
             onClose={handleClose}
             costData={dialogState.props?.costData}
             loading={dialogState.props?.loading}
@@ -51,7 +47,6 @@ const GlobalDialog: React.FC = () => {
       case 'context-chunks':
         return (
           <ContextChunksDialog
-            isOpen={true}
             onClose={handleClose}
             chunks={dialogState.props?.chunks}
           />

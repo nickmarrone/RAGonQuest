@@ -43,9 +43,7 @@ function App() {
         </div>
         <ConversationInput />
       </div>
-      {/* Global Toast */}
       <Toast />
-      {/* Global Dialog */}
       <GlobalDialog />
     </div>
   );

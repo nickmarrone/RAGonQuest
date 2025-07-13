@@ -22,7 +22,6 @@ export interface CostEstimateData {
 }
 
 interface EstimateCostDialogProps {
-  isOpen: boolean;
   onClose: () => void;
   costData?: CostEstimateData;
   loading?: boolean;
@@ -30,7 +29,6 @@ interface EstimateCostDialogProps {
 }
 
 const EstimateCostDialog: React.FC<EstimateCostDialogProps> = ({
-  isOpen,
   onClose,
   costData,
   loading = false,
@@ -40,7 +38,6 @@ const EstimateCostDialog: React.FC<EstimateCostDialogProps> = ({
 
   return (
     <Dialog
-      isOpen={isOpen}
       onCancel={onClose}
       title="Estimate Embedding Cost"
       showCancelButton={true}
