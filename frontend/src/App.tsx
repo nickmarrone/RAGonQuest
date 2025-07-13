@@ -1,21 +1,21 @@
 import './App.css'
 import { useRef, useEffect } from 'react';
-import { useAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { Corpora } from './components/Corpora';
 import ConversationsList from './components/ConversationsList';
 import ConversationInput from './components/ConversationInput';
-import { conversationPartsAtom } from './atoms/conversationsAtoms';
+import { activeConversationAtom } from './atoms/conversationsAtoms';
 import ConversationView from './components/ConversationView';
 import Toast from './components/Toast';
 import GlobalDialog from './components/GlobalDialog';
 
 function App() {
   const mainContentRef = useRef<HTMLDivElement>(null);
-  const [conversationParts] = useAtom(conversationPartsAtom);
+  const activeConversation = useAtomValue(activeConversationAtom);
 
   // Scroll to bottom when conversation parts change (new part added)
   useEffect(() => {
-    if (mainContentRef.current && conversationParts.length > 0) {
+    if (mainContentRef.current && activeConversation?.parts && activeConversation.parts.length > 0) {
       // Try multiple times with different delays to ensure content is rendered
       const scrollToBottom = () => {
         if (mainContentRef.current) {
@@ -27,7 +27,7 @@ function App() {
       // Delay to ensure content is rendered
       setTimeout(scrollToBottom, 100);
     }
-  }, [conversationParts.length]);
+  }, [activeConversation?.parts?.length]);
 
   return (
     <div className="flex h-screen bg-zinc-900 text-white overflow-hidden">
