@@ -277,9 +277,8 @@ export const Corpora: React.FC = () => {
         renderItem={renderCorpusItem}
         getItemKey={(corpus) => corpus.id}
         onNewClick={() => openCorpusDialog()}
-        newButtonDisabled={isCreating}
-        newButtonLoading={isCreating}
-        newButtonText={isCreating ? "Creating..." : "New"}
+        newButtonText="New"
+        emptyMessage="No corpora yet."
       />
     </div>
   );

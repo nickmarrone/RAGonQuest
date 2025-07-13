@@ -8,7 +8,6 @@ interface ListContainerProps<T> {
   onNewClick: () => void;
   newButtonText?: string;
   newButtonDisabled?: boolean;
-  newButtonLoading?: boolean;
   className?: string;
   titleClassName?: string;
   emptyMessage?: string;
@@ -22,7 +21,6 @@ const ListContainer = <T,>({
   onNewClick,
   newButtonText = "New",
   newButtonDisabled = false,
-  newButtonLoading = false,
   className = "",
   titleClassName = "text-lg font-bold mb-4",
   emptyMessage = "No items yet."
@@ -33,10 +31,10 @@ const ListContainer = <T,>({
         <h2 className={titleClassName}>{title}</h2>
         <button
           onClick={onNewClick}
-          disabled={newButtonDisabled}
           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white text-xs rounded transition-colors"
+          disabled={newButtonDisabled}
         >
-          {newButtonLoading ? "Loading..." : newButtonText}
+          {newButtonText}
         </button>
       </div>
       <ul>
@@ -54,4 +52,4 @@ const ListContainer = <T,>({
   );
 };
 
-export default ListContainer; 
+export default ListContainer;
