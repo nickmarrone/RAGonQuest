@@ -1,27 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAtom } from "jotai";
-import { activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
+import { activeConversationAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 
 const ConversationInput: React.FC = () => {
   const [activeCorpus] = useAtom(activeCorpusAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
-  const [, setConversationParts] = useAtom(conversationPartsAtom);
   const [inProgress, setInProgress] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Detect if this is a new conversation (no active conversation selected)
   const isNewConversation = !activeConversation;
-
-  // Load conversation parts when active conversation changes
-  useEffect(() => {
-    if (activeConversation && activeConversation.parts) {
-      setConversationParts(activeConversation.parts);
-    } else {
-      setConversationParts([]);
-    }
-  }, [activeConversation, setConversationParts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,9 +66,8 @@ const ConversationInput: React.FC = () => {
 
       const updatedConversation = await response.json();
       
-      // Update the conversation and parts
+      // Update the conversation
       setActiveConversation(updatedConversation);
-      setConversationParts(updatedConversation.parts);
       
       // Clear the input
       setInputValue("");

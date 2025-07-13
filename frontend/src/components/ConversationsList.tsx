@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { conversationsAtom, activeConversationAtom, conversationPartsAtom } from "../atoms/conversationsAtoms";
+import { conversationsAtom, activeConversationAtom } from "../atoms/conversationsAtoms";
 import { activeCorpusAtom } from "../atoms/corporaAtoms";
 import type { Conversation } from "../types";
 import DropdownMenu from "./DropdownMenu";
@@ -11,7 +11,6 @@ const ConversationsList: React.FC = () => {
   const activeCorpus = useAtomValue(activeCorpusAtom);
   const [conversations, setConversations] = useAtom(conversationsAtom);
   const [activeConversation, setActiveConversation] = useAtom(activeConversationAtom);
-  const [conversationParts, setConversationParts] = useAtom(conversationPartsAtom);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
   const { showSuccess, showError } = useToast();
@@ -19,7 +18,6 @@ const ConversationsList: React.FC = () => {
 
   const clearActiveConversation = () => {
     setActiveConversation(null);
-    setConversationParts([]);
   }
 
   const fetchConversations = async () => {
@@ -44,7 +42,6 @@ const ConversationsList: React.FC = () => {
         const updatedActive = sorted.find(conv => conv.id === activeConversation.id);
         if (updatedActive) {
           setActiveConversation(updatedActive);
-          setConversationParts(updatedActive.parts);
         }
       }
     } catch (error) {
@@ -59,14 +56,13 @@ const ConversationsList: React.FC = () => {
   // Refresh conversations when conversation parts change (indicating a new part was added)
   // TODO: Do we need to refresh if we have the updated part as a response? Do we need to refresh all conversations?
   useEffect(() => {
-    if (conversationParts.length > 0) {
+    if (activeConversation?.parts && activeConversation.parts.length > 0) {
       fetchConversations();
     }
-  }, [conversationParts.length]);
+  }, [activeConversation?.parts?.length]);
 
   const handleConversationSelect = async (conversation: Conversation) => {
     setActiveConversation(conversation);
-    setConversationParts(conversation.parts);
   };
 
   const handleDeleteConversation = async (conversation: Conversation) => {

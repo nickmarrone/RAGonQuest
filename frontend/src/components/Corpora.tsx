@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { corporaAtom, activeCorpusAtom } from "../atoms/corporaAtoms";
-import { conversationPartsAtom } from "../atoms/conversationsAtoms";
 import { useToast } from "../hooks/useToast";
 import ListContainer from "./ListContainer";
 import DropdownMenu from "./DropdownMenu";
@@ -12,11 +11,9 @@ import type { CostEstimateData } from "./EstimateCostDialog";
 export const Corpora: React.FC = () => {
   const [corpora, setCorpora] = useAtom(corporaAtom);
   const [activeCorpus, setActiveCorpus] = useAtom(activeCorpusAtom);
-  const setConversationParts = useSetAtom(conversationPartsAtom);
   const openDialog = useSetAtom(openDialogAtom);
   const closeDialog = useSetAtom(closeDialogAtom);
   const [error, setError] = useState<string | null>(null);
-  const [isCreating, _] = useState(false);
   const [scanningCorpusId, setScanningCorpusId] = useState<string | null>(null);
   const [ingestingCorpusId, setIngestingCorpusId] = useState<string | null>(null);
   const [deletingCorpusId, setDeletingCorpusId] = useState<string | null>(null);
@@ -37,13 +34,8 @@ export const Corpora: React.FC = () => {
     fetchCorpora();
   }, []);
 
-  const clearConversation = () => {
-    setConversationParts([]);
-  };
-
   const handleCorpusSelect = (corpus: Corpus) => {
     setActiveCorpus(corpus);
-    clearConversation();
   };
 
   const openCorpusDialog = (corpus?: Corpus) => {
@@ -164,7 +156,6 @@ export const Corpora: React.FC = () => {
             // Clear active corpus if it was the one being deleted
             if (activeCorpus?.id === corpus.id) {
               setActiveCorpus(null);
-              setConversationParts([]);
             }
             
             showSuccess('Corpus deleted successfully!');
@@ -277,9 +268,8 @@ export const Corpora: React.FC = () => {
         renderItem={renderCorpusItem}
         getItemKey={(corpus) => corpus.id}
         onNewClick={() => openCorpusDialog()}
-        newButtonDisabled={isCreating}
-        newButtonLoading={isCreating}
-        newButtonText={isCreating ? "Creating..." : "New"}
+        newButtonText="New"
+        emptyMessage="No corpora yet."
       />
     </div>
   );
