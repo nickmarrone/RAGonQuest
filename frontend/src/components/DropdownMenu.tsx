@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import Spinner from "./Spinner";
 
 export interface DropdownItem {
   label: string;
@@ -87,9 +88,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
               className={getItemClassName(item)}
               disabled={item.disabled}
             >
-              {item.loading && (
-                <span className="animate-spin mr-2">⏳</span>
-              )}
+              {item.loading && <Spinner />}
               {item.label}
             </button>
           ))}
